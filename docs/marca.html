@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marca Way2Do</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563EB'/%3E%3Cpolyline points='25 10 13 22 7 16' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<!-- Tokens e componentes reais do design aprovado: a página renderiza a marca com o próprio CSS do produto. -->
+<link rel="stylesheet" href="design/way2do.css">
+<style>
+  .doc{max-width:1040px;margin:0 auto;padding:32px 16px 64px;display:flex;flex-direction:column;gap:40px}
+  .doc h2{font-size:24px;font-weight:800;letter-spacing:-.01em;margin:0 0 4px}
+  .doc h3{font-size:17px;font-weight:800;margin:24px 0 10px}
+  .doc p,.doc li{color:var(--w2-text-2);max-width:72ch}
+  .doc ul:not(.tasklist){margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+  .doc code{font-family:var(--w2-mono);font-size:14px;background:var(--w2-surface-2);padding:1px 6px;border-radius:6px;color:var(--w2-text)}
+  .doc section{background:var(--w2-surface);border:1px solid var(--w2-border);border-radius:16px;padding:24px}
+  .lead{font-size:18px}
+  .toc{display:flex;flex-wrap:wrap;gap:8px}
+  .toc a{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:999px;background:var(--w2-surface);border:1px solid var(--w2-border);color:var(--w2-text);font-weight:700;font-size:14px;text-decoration:none}
+  .toc a:hover{background:var(--w2-primary-soft);color:var(--w2-primary-strong)}
+  .hero{display:flex;flex-wrap:wrap;align-items:center;gap:24px;justify-content:space-between}
+  .note{font-size:14px;color:var(--w2-muted)}
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+  .sw{border:1px solid var(--w2-border);border-radius:12px;overflow:hidden;background:var(--w2-surface)}
+  .sw__chip{height:72px;display:flex;align-items:flex-end;padding:8px 10px;font-weight:700;font-size:14px}
+  .sw__body{padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+  .sw__name{font-family:var(--w2-mono);font-size:13px;color:var(--w2-text);font-weight:600}
+  .sw__hex{font-family:var(--w2-mono);font-size:13px;color:var(--w2-muted)}
+  .sw__use{font-size:13px;color:var(--w2-text-2)}
+  table.t{width:100%;border-collapse:collapse;font-size:15px}
+  table.t th,table.t td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--w2-border);vertical-align:middle}
+  table.t th{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--w2-muted);font-weight:800}
+  .tscroll{overflow-x:auto}
+  .pair{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border-radius:8px;font-weight:700;font-size:14px;border:1px solid var(--w2-border)}
+  .ok{color:var(--w2-ok);font-weight:800}
+  .typerow{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 24px;padding:12px 0;border-bottom:1px solid var(--w2-border)}
+  .typerow__spec{font-family:var(--w2-mono);font-size:13px;color:var(--w2-muted);min-width:180px}
+  .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .stack{display:flex;flex-direction:column;gap:8px}
+  .radii{display:flex;flex-wrap:wrap;gap:16px}
+  .radius{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;color:var(--w2-text-2)}
+  .radius__box{width:72px;height:56px;background:var(--w2-primary-soft);border:2px solid var(--w2-primary)}
+  .do-dont{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  .dd{border:2px solid;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .dd--do{border-color:var(--w2-ok)}
+  .dd--dont{border-color:var(--w2-danger)}
+  .dd__label{font-weight:800;font-size:14px}
+  .dd--do .dd__label{color:var(--w2-ok)}
+  .dd--dont .dd__label{color:var(--w2-danger-text)}
+  .fake-btn-bad{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;border-radius:10px;background:#1D4ED8;color:#111827;font-weight:700}
+  .phone-demo{width:100%;max-width:390px;border:1px solid var(--w2-border);border-radius:16px;overflow:hidden;background:var(--w2-bg)}
+  footer.doc-foot{font-size:14px;color:var(--w2-muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="w2">
+<main class="doc">
+
+  <header class="hero">
+    <div class="stack">
+      <div class="brand" style="font-size:28px">
+        <span class="brand__mark" style="width:44px;height:44px;border-radius:12px">
+          <svg class="ico" style="width:26px;height:26px" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </span>Way2Do
+      </div>
+      <h1 style="font-size:26px;font-weight:800;margin-top:12px">Marca e tokens de interface</h1>
+      <p class="lead">Identidade visual da Todo List offline-first: cores, tipografia, forma, ícones, componentes e tom de voz.</p>
+      <p class="note">Fonte dos valores: o design aprovado e o CSS dele, <code>docs/design/way2do.css</code>, que esta página usa para se desenhar. Se houver divergência, vale o CSS.</p>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Seções">
+    <a href="#principios">Princípios</a>
+    <a href="#simbolo">Nome e símbolo</a>
+    <a href="#cores">Cores</a>
+    <a href="#contraste">Contraste</a>
+    <a href="#tipografia">Tipografia</a>
+    <a href="#forma">Forma e espaço</a>
+    <a href="#icones">Ícones</a>
+    <a href="#componentes">Componentes</a>
+    <a href="#toque">Toque e responsividade</a>
+    <a href="#voz">Tom de voz</a>
+  </nav>
+
+  <section id="principios">
+    <h2>1. Princípios</h2>
+    <ul>
+      <li><strong>Clareza acima de estética.</strong> Interface funcional, sem ornamentos.</li>
+      <li><strong>Feita para o campo.</strong> Uso principal no celular, com uma mão e sob sol forte: contraste alto, alvos de toque grandes, ações principais ao alcance do polegar.</li>
+      <li><strong>Estado sempre visível.</strong> O usuário sabe a qualquer momento se está offline, sincronizando ou sincronizado.</li>
+      <li><strong>Acessível por padrão.</strong> Todo texto com contraste de pelo menos 4,5:1 (WCAG AA); a cor nunca é o único sinal, sempre há texto ou ícone junto.</li>
+      <li><strong>Funciona offline.</strong> Nada depende de recurso externo para renderizar: fonte do sistema e ícones embutidos.</li>
+    </ul>
+  </section>
+
+  <section id="simbolo">
+    <h2>2. Nome e símbolo</h2>
+    <p>Nome escrito <strong>Way2Do</strong> (W e D maiúsculos, sem espaço). Símbolo: quadrado de cantos arredondados no azul principal com um <strong>check</strong> branco de traço. Logotipo: símbolo e nome lado a lado, 8 px de espaço, nome em peso 800.</p>
+    <div class="row" style="margin-top:16px;gap:32px">
+      <div class="stack">
+        <div class="brand"><span class="brand__mark"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg></span>Way2Do</div>
+        <span class="note">Barra superior: símbolo 30 px, raio 8, ícone 20, nome 20 px</span>
+      </div>
+      <div class="stack">
+        <div class="brand" style="font-size:28px"><span class="brand__mark" style="width:44px;height:44px;border-radius:12px"><svg class="ico" style="width:26px;height:26px" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg></span>Way2Do</div>
+        <span class="note">Login: símbolo 44 px, raio 12, ícone 26, nome 28 px</span>
+      </div>
+    </div>
+    <p class="note" style="margin-top:12px">Não usar o símbolo sobre fundo azul nem com o check em outra cor.</p>
+  </section>
+
+  <section id="cores">
+    <h2>3. Cores</h2>
+
+    <h3>Base</h3>
+    <div class="swatches">
+      <div class="sw"><div class="sw__chip" style="background:#EEF0F3;color:#111827">Aa</div><div class="sw__body"><span class="sw__name">--w2-bg</span><span class="sw__hex">#EEF0F3</span><span class="sw__use">fundo das telas</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#FFFFFF;color:#111827;border-bottom:1px solid #D1D5DB">Aa</div><div class="sw__body"><span class="sw__name">--w2-surface</span><span class="sw__hex">#FFFFFF</span><span class="sw__use">cartões, barras, campos, diálogos</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#F3F4F6;color:#111827">Aa</div><div class="sw__body"><span class="sw__name">--w2-surface-2</span><span class="sw__hex">#F3F4F6</span><span class="sw__use">hover e superfícies secundárias</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#111827;color:#FFFFFF">Aa</div><div class="sw__body"><span class="sw__name">--w2-text</span><span class="sw__hex">#111827</span><span class="sw__use">texto principal</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#374151;color:#FFFFFF">Aa</div><div class="sw__body"><span class="sw__name">--w2-text-2</span><span class="sw__hex">#374151</span><span class="sw__use">texto secundário</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#4B5563;color:#FFFFFF">Aa</div><div class="sw__body"><span class="sw__name">--w2-muted</span><span class="sw__hex">#4B5563</span><span class="sw__use">dicas, rótulos de seção</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#D1D5DB;color:#111827">Aa</div><div class="sw__body"><span class="sw__name">--w2-border</span><span class="sw__hex">#D1D5DB</span><span class="sw__use">bordas e divisórias</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#6B7280;color:#FFFFFF">Aa</div><div class="sw__body"><span class="sw__name">--w2-border-strong</span><span class="sw__hex">#6B7280</span><span class="sw__use">bordas de campos e controles</span></div></div>
+    </div>
+
+    <h3>Ação principal (azul)</h3>
+    <div class="swatches">
+      <div class="sw"><div class="sw__chip" style="background:#2563EB;color:#FFFFFF">Salvar</div><div class="sw__body"><span class="sw__name">--w2-primary</span><span class="sw__hex">#2563EB</span><span class="sw__use">botões principais, seleção, links, foco</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#1D4ED8;color:#FFFFFF">Hover</div><div class="sw__body"><span class="sw__name">--w2-primary-hover</span><span class="sw__hex">#1D4ED8</span><span class="sw__use">hover</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#1E40AF;color:#FFFFFF">Pressionado</div><div class="sw__body"><span class="sw__name">--w2-primary-active</span><span class="sw__hex">#1E40AF</span><span class="sw__use">pressionado</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#1E3A8A;color:#FFFFFF">Aa</div><div class="sw__body"><span class="sw__name">--w2-primary-strong</span><span class="sw__hex">#1E3A8A</span><span class="sw__use">texto sobre azul claro</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#DBEAFE;color:#1E3A8A">Aa</div><div class="sw__body"><span class="sw__name">--w2-primary-soft</span><span class="sw__hex">#DBEAFE</span><span class="sw__use">fundos informativos, chips</span></div></div>
+    </div>
+
+    <h3>Destrutivo e urgente (vermelho)</h3>
+    <div class="swatches">
+      <div class="sw"><div class="sw__chip" style="background:#DC2626;color:#FFFFFF">Excluir</div><div class="sw__body"><span class="sw__name">--w2-danger</span><span class="sw__hex">#DC2626</span><span class="sw__use">botões destrutivos, selo e borda "urgente"</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#B91C1C;color:#FFFFFF">Hover</div><div class="sw__body"><span class="sw__name">--w2-danger-hover</span><span class="sw__hex">#B91C1C</span><span class="sw__use">hover</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#991B1B;color:#FFFFFF">Pressionado</div><div class="sw__body"><span class="sw__name">--w2-danger-active</span><span class="sw__hex">#991B1B</span><span class="sw__use">pressionado</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#FFFFFF;color:#B91C1C;border-bottom:1px solid #D1D5DB">Texto de erro</div><div class="sw__body"><span class="sw__name">--w2-danger-text</span><span class="sw__hex">#B91C1C</span><span class="sw__use"><strong>texto</strong> de erro e campo obrigatório</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#7F1D1D;color:#FFFFFF">Aa</div><div class="sw__body"><span class="sw__name">--w2-danger-strong</span><span class="sw__hex">#7F1D1D</span><span class="sw__use">texto sobre vermelho claro</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#FEE2E2;color:#7F1D1D">Aa</div><div class="sw__body"><span class="sw__name">--w2-danger-soft</span><span class="sw__hex">#FEE2E2</span><span class="sw__use">fundos de erro e "vencida"</span></div></div>
+    </div>
+
+    <h3>Estados</h3>
+    <div class="swatches">
+      <div class="sw"><div class="sw__chip" style="background:#166534;color:#FFFFFF">Concluída</div><div class="sw__body"><span class="sw__name">--w2-ok</span><span class="sw__hex">#166534</span><span class="sw__use">check de concluída</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#DCFCE7;color:#14532D">Sincronizado</div><div class="sw__body"><span class="sw__name">--w2-ok-soft / -strong</span><span class="sw__hex">#DCFCE7 / #14532D</span><span class="sw__use">sucesso</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#FEF3C7;color:#78350F">Pendente</div><div class="sw__body"><span class="sw__name">--w2-warn-soft / -strong</span><span class="sw__hex">#FEF3C7 / #78350F</span><span class="sw__use">atenção, "vence hoje"</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#1F2937;color:#FFFFFF">Offline</div><div class="sw__body"><span class="sw__name">--w2-offline</span><span class="sw__hex">#1F2937</span><span class="sw__use">faixa "Offline"</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#7C2D12;color:#FFFFFF">Sessão expirada</div><div class="sw__body"><span class="sw__name">--w2-expired</span><span class="sw__hex">#7C2D12</span><span class="sw__use">faixa "Sessão expirada"</span></div></div>
+      <div class="sw"><div class="sw__chip" style="background:#EEF2FF;color:#3730A3">obra</div><div class="sw__body"><span class="sw__name">--w2-tag-bg / -fg</span><span class="sw__hex">#EEF2FF / #3730A3</span><span class="sw__use">tags</span></div></div>
+    </div>
+
+    <h3>Regras de uso</h3>
+    <ul>
+      <li>Rótulo sobre botão preenchido é <strong>sempre branco</strong> (<code>--w2-on-fill</code>), peso 600.</li>
+      <li>Vermelho preenchido só para ação destrutiva e para o selo "urgente". Para texto de erro, use <code>--w2-danger-text</code>.</li>
+      <li>Fundo claro de estado (<code>*-soft</code>) sempre com o texto escuro correspondente (<code>*-strong</code>).</li>
+      <li>Tarefa concluída: superfície <code>#F3F4F6</code>, conteúdo com opacidade 0,6 e título riscado.</li>
+    </ul>
+    <div class="do-dont" style="margin-top:16px">
+      <div class="dd dd--do"><span class="dd__label">Fazer</span><div class="row"><button class="btn btn--primary" type="button">Salvar</button><button class="btn btn--danger" type="button">Excluir tarefa</button></div><span class="note">Rótulo branco, peso 600, sobre o tom principal.</span></div>
+      <div class="dd dd--dont"><span class="dd__label">Não fazer</span><div class="row"><span class="fake-btn-bad">Salvar</span></div><span class="note">Rótulo escuro sobre azul saturado: contraste ≈ 2,7:1, ilegível.</span></div>
+    </div>
+  </section>
+
+  <section id="contraste">
+    <h2>4. Contraste</h2>
+    <p>Razões calculadas pela fórmula da WCAG 2.1. Mínimo exigido para texto: <strong>4,5:1</strong>.</p>
+    <div class="tscroll">
+    <table class="t">
+      <thead><tr><th>Amostra</th><th>Texto / fundo</th><th>Uso</th><th>Razão</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pair" style="background:#FFFFFF;color:#111827">Aa</span></td><td><code>#111827</code> / <code>#FFFFFF</code></td><td>texto principal</td><td class="ok">17,74:1</td></tr>
+        <tr><td><span class="pair" style="background:#EEF0F3;color:#111827">Aa</span></td><td><code>#111827</code> / <code>#EEF0F3</code></td><td>texto sobre o fundo</td><td class="ok">15,54:1</td></tr>
+        <tr><td><span class="pair" style="background:#FFFFFF;color:#374151">Aa</span></td><td><code>#374151</code> / <code>#FFFFFF</code></td><td>texto secundário</td><td class="ok">10,31:1</td></tr>
+        <tr><td><span class="pair" style="background:#FFFFFF;color:#4B5563">Aa</span></td><td><code>#4B5563</code> / <code>#FFFFFF</code></td><td>dicas</td><td class="ok">7,56:1</td></tr>
+        <tr><td><span class="pair" style="background:#EEF0F3;color:#4B5563">Aa</span></td><td><code>#4B5563</code> / <code>#EEF0F3</code></td><td>rótulos de seção</td><td class="ok">6,62:1</td></tr>
+        <tr><td><span class="pair" style="background:#2563EB;color:#FFFFFF">Aa</span></td><td><code>#FFFFFF</code> / <code>#2563EB</code></td><td>botão principal</td><td class="ok">5,17:1</td></tr>
+        <tr><td><span class="pair" style="background:#1D4ED8;color:#FFFFFF">Aa</span></td><td><code>#FFFFFF</code> / <code>#1D4ED8</code></td><td>hover</td><td class="ok">6,70:1</td></tr>
+        <tr><td><span class="pair" style="background:#1E40AF;color:#FFFFFF">Aa</span></td><td><code>#FFFFFF</code> / <code>#1E40AF</code></td><td>pressionado</td><td class="ok">8,72:1</td></tr>
+        <tr><td><span class="pair" style="background:#FFFFFF;color:#2563EB">Aa</span></td><td><code>#2563EB</code> / <code>#FFFFFF</code></td><td>links</td><td class="ok">5,17:1</td></tr>
+        <tr><td><span class="pair" style="background:#DC2626;color:#FFFFFF">Aa</span></td><td><code>#FFFFFF</code> / <code>#DC2626</code></td><td>destrutivo, selo urgente</td><td class="ok">4,83:1</td></tr>
+        <tr><td><span class="pair" style="background:#B91C1C;color:#FFFFFF">Aa</span></td><td><code>#FFFFFF</code> / <code>#B91C1C</code></td><td>hover destrutivo</td><td class="ok">6,47:1</td></tr>
+        <tr><td><span class="pair" style="background:#991B1B;color:#FFFFFF">Aa</span></td><td><code>#FFFFFF</code> / <code>#991B1B</code></td><td>pressionado destrutivo</td><td class="ok">8,31:1</td></tr>
+        <tr><td><span class="pair" style="background:#FFFFFF;color:#B91C1C">Aa</span></td><td><code>#B91C1C</code> / <code>#FFFFFF</code></td><td>texto de erro</td><td class="ok">6,47:1</td></tr>
+        <tr><td><span class="pair" style="background:#166534;color:#FFFFFF">Aa</span></td><td><code>#FFFFFF</code> / <code>#166534</code></td><td>check de concluída</td><td class="ok">7,13:1</td></tr>
+        <tr><td><span class="pair" style="background:#1F2937;color:#FFFFFF">Aa</span></td><td><code>#FFFFFF</code> / <code>#1F2937</code></td><td>Offline</td><td class="ok">14,68:1</td></tr>
+        <tr><td><span class="pair" style="background:#7C2D12;color:#FFFFFF">Aa</span></td><td><code>#FFFFFF</code> / <code>#7C2D12</code></td><td>Sessão expirada</td><td class="ok">9,37:1</td></tr>
+        <tr><td><span class="pair" style="background:#FEF3C7;color:#78350F">Aa</span></td><td><code>#78350F</code> / <code>#FEF3C7</code></td><td>Pendente, vence hoje</td><td class="ok">8,15:1</td></tr>
+        <tr><td><span class="pair" style="background:#DBEAFE;color:#1E3A8A">Aa</span></td><td><code>#1E3A8A</code> / <code>#DBEAFE</code></td><td>Sincronizando</td><td class="ok">8,49:1</td></tr>
+        <tr><td><span class="pair" style="background:#DCFCE7;color:#14532D">Aa</span></td><td><code>#14532D</code> / <code>#DCFCE7</code></td><td>Sincronizado</td><td class="ok">8,30:1</td></tr>
+        <tr><td><span class="pair" style="background:#FEE2E2;color:#7F1D1D">Aa</span></td><td><code>#7F1D1D</code> / <code>#FEE2E2</code></td><td>Erro, vencida</td><td class="ok">8,20:1</td></tr>
+        <tr><td><span class="pair" style="background:#EEF2FF;color:#3730A3">Aa</span></td><td><code>#3730A3</code> / <code>#EEF2FF</code></td><td>tag</td><td class="ok">8,88:1</td></tr>
+        <tr><td><span class="pair" style="background:#FFEDD5;color:#9A3412">Aa</span></td><td><code>#9A3412</code> / <code>#FFEDD5</code></td><td>prioridade alta</td><td class="ok">6,38:1</td></tr>
+        <tr><td><span class="pair" style="background:#E5E7EB;color:#1F2937">Aa</span></td><td><code>#1F2937</code> / <code>#E5E7EB</code></td><td>prioridade média</td><td class="ok">11,86:1</td></tr>
+        <tr><td><span class="pair" style="background:#E5E7EB;color:#4B5563">Aa</span></td><td><code>#4B5563</code> / <code>#E5E7EB</code></td><td>botão desabilitado</td><td class="ok">6,10:1</td></tr>
+        <tr><td><span class="pair" style="background:#FFFFFF;color:#6B7280">Aa</span></td><td><code>#6B7280</code> / <code>#FFFFFF</code></td><td>placeholder</td><td class="ok">4,83:1</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section id="tipografia">
+    <h2>5. Tipografia</h2>
+    <p>Fonte do sistema (<code>system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif</code>): carrega instantaneamente, funciona offline e é a mais legível em cada aparelho. Monoespaçada (<code>ui-monospace, SFMono-Regular, Consolas, …</code>) só para URLs de integração. Altura de linha base 1,4. Campos nunca abaixo de 16 px, para evitar o zoom automático do iOS.</p>
+    <div style="margin-top:12px">
+      <div class="typerow"><span class="typerow__spec">26 px · 800</span><span style="font-size:26px;font-weight:800;letter-spacing:-.01em">Título de página</span></div>
+      <div class="typerow"><span class="typerow__spec">20 px · 800</span><span style="font-size:20px;font-weight:800">Título de diálogo e de painel</span></div>
+      <div class="typerow"><span class="typerow__spec">17 px · 700</span><span style="font-size:17px;font-weight:700">Urgente: trocar disjuntor do galpão 3</span></div>
+      <div class="typerow"><span class="typerow__spec">16 px · 400</span><span style="font-size:16px">Corpo e campos de texto</span></div>
+      <div class="typerow"><span class="typerow__spec">16 px · 600</span><span style="font-size:16px;font-weight:600">Rótulo de botão</span></div>
+      <div class="typerow"><span class="typerow__spec">15 px · 700</span><span style="font-size:15px;font-weight:700">Rótulo de campo · indicador de sincronização</span></div>
+      <div class="typerow"><span class="typerow__spec">14 px · 400</span><span style="font-size:14px;color:#4B5563">Descrição da tarefa, dicas</span></div>
+      <div class="typerow"><span class="typerow__spec">14 px · 700</span><span style="font-size:14px;font-weight:700;color:#B91C1C">Mensagem de erro</span></div>
+      <div class="typerow"><span class="typerow__spec">13 px · 700</span><span class="tag">obra</span><span class="badge badge--urgent">Urgente</span></div>
+      <div class="typerow"><span class="typerow__spec">13 px · 800 · MAIÚSCULAS</span><span class="section-label">Rótulo de seção</span></div>
+      <div class="typerow"><span class="typerow__spec">14 px · mono · 600</span><span class="integ__url">https://way2do-consumer.…/in/••••••3f9a</span></div>
+    </div>
+  </section>
+
+  <section id="forma">
+    <h2>6. Forma, espaço e elevação</h2>
+    <div class="radii" style="margin-top:12px">
+      <div class="radius"><span class="radius__box" style="border-radius:6px"></span>6 · selos</div>
+      <div class="radius"><span class="radius__box" style="border-radius:8px"></span>8 · símbolo, tags laterais</div>
+      <div class="radius"><span class="radius__box" style="border-radius:10px"></span>10 · botões, campos</div>
+      <div class="radius"><span class="radius__box" style="border-radius:12px"></span>12 · cartões, avisos</div>
+      <div class="radius"><span class="radius__box" style="border-radius:14px"></span>14 · diálogos</div>
+      <div class="radius"><span class="radius__box" style="border-radius:18px 18px 0 0"></span>18 · painel (topo)</div>
+      <div class="radius"><span class="radius__box" style="border-radius:999px"></span>999 · tags, chips</div>
+    </div>
+    <ul style="margin-top:16px">
+      <li><strong>Espaçamento:</strong> múltiplos de 2 e 4 px; os mais usados são 6, 8, 12, 16 e 24 px.</li>
+      <li><strong>Bordas:</strong> 1 px em cartões; 2 px em campos, botões e na tarefa urgente.</li>
+      <li><strong>Elevação:</strong> só em camadas sobrepostas (barra inferior, menu, painel deslizante, diálogo). Fundo escurecido atrás delas: <code>rgba(17,24,39,.6)</code>.</li>
+      <li><strong>Foco:</strong> contorno de 3 px <code>#93C5FD</code>, afastamento de 1 px e borda no azul principal.</li>
+    </ul>
+  </section>
+
+  <section id="icones">
+    <h2>7. Ícones</h2>
+    <p>Ícones de <strong>traço</strong>: espessura 2, pontas e junções arredondadas, sem preenchimento, na cor do texto (<code>currentColor</code>). SVG embutido no código, sem biblioteca nem fonte de ícones. Tamanhos: 16, 20 (padrão) e 32 px. Ícone decorativo leva <code>aria-hidden="true"</code>; botão só com ícone leva rótulo acessível.</p>
+    <div class="row" style="margin-top:12px;gap:20px;color:#111827">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6M14 11v6"></path></svg>
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+      <svg class="ico ico-lg" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
+  </section>
+
+  <section id="componentes">
+    <h2>8. Componentes</h2>
+
+    <h3>Botões</h3>
+    <div class="row">
+      <button class="btn btn--primary" type="button">Salvar</button>
+      <button class="btn btn--secondary" type="button">Cancelar</button>
+      <button class="btn btn--danger" type="button">Excluir tarefa</button>
+      <button class="btn btn--danger-outline" type="button">Excluir</button>
+      <button class="btn btn--ghost" type="button">Limpar filtros</button>
+      <button class="btn" type="button" disabled>Desabilitado</button>
+    </div>
+    <p class="note" style="margin-top:8px">Altura mínima 48 px (56 px no grande e na barra inferior do celular).</p>
+
+    <h3>Campo</h3>
+    <div class="stack" style="max-width:420px;gap:16px">
+      <div class="field"><label class="label" for="demo-t">Título <span class="req">*</span></label><input class="input" id="demo-t" value="Revisar orçamento — não é urgente"></div>
+      <div class="field"><label class="label" for="demo-e">Título <span class="req">*</span></label><input class="input input--error" id="demo-e" value=""><span class="error-msg">Informe um título para a tarefa.</span></div>
+    </div>
+
+    <h3>Selos e tags</h3>
+    <div class="row">
+      <span class="badge badge--urgent">Urgente</span>
+      <span class="badge badge--overdue">Vencida · 27/10</span>
+      <span class="badge badge--today">Vence hoje</span>
+      <span class="badge badge--due">31/10</span>
+      <span class="badge badge--prio-high">Alta</span>
+      <span class="badge badge--prio-med">Média</span>
+      <span class="badge badge--prio-low">Baixa</span>
+      <span class="tag">obra</span><span class="tag">cliente</span><span class="tag">financeiro</span>
+    </div>
+
+    <h3>Tarefas</h3>
+    <ul class="tasklist" style="max-width:560px">
+      <li class="task task--urgent">
+        <button class="toggle" type="button" aria-label="Concluir"><span class="toggle__ring"></span></button>
+        <div class="task__body"><span class="task__title">Urgente: trocar disjuntor do galpão 3</span><div class="task__meta"><span class="badge badge--urgent">Urgente</span><span class="badge badge--today">Vence hoje</span><span class="badge badge--prio-high">Alta</span><span class="tag">obra</span></div></div>
+      </li>
+      <li class="task">
+        <button class="toggle" type="button" aria-label="Concluir"><span class="toggle__ring"></span></button>
+        <div class="task__body"><span class="task__title">Revisar orçamento — não é urgente</span><span class="task__desc">Fica fora do topo: a menção está negada.</span><div class="task__meta"><span class="badge badge--prio-med">Média</span><span class="tag">financeiro</span></div></div>
+      </li>
+      <li class="task task--done">
+        <button class="toggle toggle--done" type="button" aria-label="Reabrir"><span class="toggle__ring"><svg class="ico ico-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg></span></button>
+        <div class="task__body"><span class="task__title">Comprar EPI para a equipe</span><div class="task__meta"><span class="tag">obra</span></div></div>
+      </li>
+    </ul>
+
+    <h3>Indicador de sincronização</h3>
+    <div class="phone-demo">
+      <div class="sync sync--offline"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="2" y1="2" x2="22" y2="22"></line><path d="M8.5 16.5a5 5 0 0 1 7 0M2 8.8a15 15 0 0 1 4.2-2.6M10.7 5.1A15 15 0 0 1 22 8.8M5 12.9a10 10 0 0 1 5.2-2.8M19 12.9a10 10 0 0 0-2-1.5M12 20h.01"></path></svg><span class="sync__text">Offline <span class="sync__detail">· 3 pendentes</span></span></div>
+      <div class="sync sync--pending"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><span class="sync__text">Pendente <span class="sync__detail">(2)</span></span></div>
+      <div class="sync sync--syncing"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"></path></svg><span class="sync__text">Sincronizando…</span></div>
+      <div class="sync sync--ok"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="sync__text">Sincronizado</span></div>
+      <div class="sync sync--error"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg><span class="sync__text">Erro no servidor <span class="sync__detail">· tentando de novo</span></span></div>
+      <div class="sync sync--expired"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg><span class="sync__text">Sessão expirada</span><button class="sync__action" type="button">Entrar de novo</button></div>
+    </div>
+
+    <h3>Avisos</h3>
+    <div class="stack" style="max-width:560px;gap:12px">
+      <div class="notice notice--danger"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg><div><div class="notice__title">Alteração recusada pelo servidor</div>A tarefa voltou ao estado salvo no servidor.</div></div>
+      <div class="notice notice--info"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"></path></svg><div><div class="notice__title">Nova versão disponível</div><div class="notice__actions"><button class="btn btn--primary" type="button">Atualizar</button></div></div></div>
+    </div>
+  </section>
+
+  <section id="toque">
+    <h2>9. Toque e responsividade</h2>
+    <ul>
+      <li>Alvo de toque mínimo de <strong>44 px</strong>; ações frequentes com 48–56 px; botão de concluir com 52 px.</li>
+      <li>Referências: celular <strong>390 × 844</strong> e desktop <strong>1280</strong> de largura; conteúdo do desktop limitado a 1200 px.</li>
+      <li><strong>Celular:</strong> indicador fixo no topo; barra inferior com Filtros, Tags e "+ Nova tarefa"; filtros, tags, menu, exclusão e logout em painéis que sobem de baixo; formulário em tela cheia.</li>
+      <li><strong>Desktop:</strong> cabeçalho com Tarefas, Integrações e Sair; tags na lateral; filtros numa barra acima da lista; formulário em diálogo.</li>
+      <li>Mobile-first: o layout do celular é a base; o desktop reorganiza sem trocar componentes.</li>
+    </ul>
+  </section>
+
+  <section id="voz">
+    <h2>10. Tom de voz</h2>
+    <ul>
+      <li>Português do Brasil, direto e curto, no imperativo para ações: "Entrar", "Salvar", "Excluir tarefa".</li>
+      <li>Explica consequências sem jargão: "O login precisa de internet. Depois de entrar, o app funciona mesmo sem sinal." · "Será apagada deste aparelho e dos outros onde você usa o Way2Do. Não dá para desfazer."</li>
+      <li>Estados de sincronização com palavras do usuário (Offline, Sincronizando, Sincronizado), nunca termos internos (push, pull, outbox).</li>
+    </ul>
+  </section>
+
+  <footer class="doc-foot">Way2Do · marca e tokens de interface · valores de <code>docs/design/way2do.css</code></footer>
+</main>
+</div>
+</body>
+</html>
