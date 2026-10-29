@@ -333,11 +333,29 @@ cliente usam o mesmo algoritmo), **para cada campo vence o valor com timestamp m
 
 ### Servidor — push
 Para cada lote, numa transação:
-1. `pg_advisory_xact_lock(<userId>)` — serializa as escritas **por usuário** (usuários diferentes seguem em paralelo).
-2. Para cada operação: garante que a tarefa pertence ao usuário do token (ou cria, se não existe), aplica o merge
-   por campo e valida o resultado (regras e limites da seção "Validação, limites e operações recusadas").
-3. Se algo mudou de fato: `version + 1`, novo `changeSeq` (sequence global) e **um evento no outbox**.
-4. Commit.
+1. `pg_advisory_xact_lock(hashtextextended(<userId>, <semente>))` — serializa as escritas **por usuário** (usuários
+   diferentes seguem em paralelo).
+2. Para cada operação: garante que a tarefa pertence ao usuário do token (tarefa de outro usuário é recusada como
+   "não encontrada", sem nenhum dado dela na resposta; dá para inferir que o id está em uso, sem impacto, porque
+   o id é um UUID gerado no aparelho e impossível de adivinhar) ou cria, se não existe; aplica o merge por campo, que valida a
+   operação inteira antes de escrever (regras e limites da seção "Validação, limites e operações recusadas").
+3. Tarefa com mudança de conteúdo no lote: `version + 1` **uma vez por lote** (mesmo que várias operações tenham
+   mexido nela) e **um evento no outbox** com o estado final: `todo.created`, `todo.updated` ou `todo.deleted`.
+   Tarefa criada e excluída no mesmo lote não gera evento (o consumidor nunca a viu).
+4. O `changeSeq` vem do banco: default no INSERT e trigger em todo UPDATE.
+5. Commit.
+
+Robustez do lote:
+- **Cada operação é lida isoladamente**: operação malformada (nula, campo sem valor, data inválida, sem `taskId`)
+  é recusada sozinha, sem derrubar o lote. Senão o aparelho reenviaria o mesmo lote para sempre.
+- **A recusa traz o estado da tarefa ao fim do lote**, com `version` e `changeSeq` já gravados, e não um estado
+  intermediário.
+- **Mesmo id criado ao mesmo tempo por dois usuários** (locks de usuários diferentes não se bloqueiam): o INSERT
+  duplicado é detectado e o lote é refeito; na nova tentativa a tarefa já existe, é de outro dono, e a operação
+  é recusada.
+- O relógio do servidor é lido depois do lock: o horário dos eventos acompanha a ordem de commit.
+- As tarefas do lote são carregadas numa consulta só; lote vazio responde sem abrir transação.
+- Corpo acima de 1 MB: 413 em ProblemDetails (o Kestrel aplica o mesmo limite a corpos sem `Content-Length`).
 
 Por que o lock por usuário: sem ele, duas transações do mesmo usuário poderiam pegar `changeSeq` 10 e 11 e
 commitar em ordem inversa; um pull entre os dois commits leria o 11, avançaria o cursor e **perderia o 10 para
@@ -562,11 +580,33 @@ Sem design sofisticado (fora de escopo pelo enunciado): o foco é clareza e uso 
 | `POST` | `/api/auth/logout` | apaga o cookie |
 | `GET` | `/api/auth/me` | usuário da sessão atual (o app confere se a sessão ainda vale ao abrir online) |
 | `POST` | `/api/sync/push` | lote de até 500 operações → resultado por operação (recusadas trazem o estado do servidor) |
-| `GET` | `/api/sync/pull?since=&limit=` | alterações desde o cursor + novo cursor + indicação de que há mais páginas |
+| `GET` | `/api/sync/pull?since=&limit=` | alterações desde o cursor (`limit` de 1 a 1000, padrão 200) + novo cursor + `hasMore` |
 | `GET` | `/api/integrations` | assinaturas do usuário logado, com a URL **mascarada** e o `dashboardUrl`, se houver |
 | `POST` | `/api/integrations` | `{ url }` → valida, testa com `webhook.ping`, grava (com o `dashboardUrl` da resposta) e, se o ping recebeu 205, enfileira o retrato completo |
 | `DELETE` | `/api/integrations/{id}` | remove a assinatura e cancela as entregas pendentes dela |
 | `GET` | `/health` | health check |
+
+Contrato do push (corpo JSON):
+
+```json
+{
+  "operations": [
+    {
+      "opId": "uuid",
+      "taskId": "uuid gerado no aparelho",
+      "createdAt": "2026-10-29T10:00:00.000Z",
+      "fields": { "title": { "value": "Urgente: trocar disjuntor", "ts": "2026-10-29T10:00:00.000Z" } },
+      "tags": { "obra": { "present": true, "ts": "2026-10-29T10:00:00.000Z" } },
+      "deletedAt": null
+    }
+  ]
+}
+```
+
+Resposta: `{ "results": [ { "opId", "taskId", "status": "accepted" | "rejected", "field", "reason", "task" } ] }`.
+Em uma recusa, `task` traz o estado atual da tarefa no servidor (ou `null` se o servidor não a tem: o aparelho
+remove a cópia local). O pull devolve `{ "tasks": [...], "cursor", "hasMore" }`, cada tarefa com `tags` (incluindo
+as removidas), `fieldTimestamps`, `version` e `changeSeq`.
 
 A escrita de tarefas passa **só pelo push**: existe um único caminho de escrita e, portanto, um único lugar onde o
 merge acontece. Filtros e busca rodam no cliente sobre o IndexedDB, porque precisam funcionar offline.

@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.JsonWebTokens;
 using Way2Do.Api.Data;
 
 namespace Way2Do.Api.Auth;
@@ -59,9 +58,7 @@ public static class AuthEndpoints
     }
 
     private static IResult Me(ClaimsPrincipal principal) =>
-        Guid.TryParse(principal.FindFirstValue(JwtRegisteredClaimNames.Sub), out var id)
-            ? Results.Ok(new UserResponse(id, principal.FindFirstValue(JwtRegisteredClaimNames.Name) ?? ""))
-            : Results.Unauthorized();
+        principal.GetUser() is { } user ? Results.Ok(new UserResponse(user.Id, user.Name)) : Results.Unauthorized();
 
     // HttpOnly: o JavaScript da página não lê o token. SameSite=Strict: o cookie não sai em requisições de outros
     // sites (CSRF). Secure: só trafega em HTTPS (desligável apenas no ambiente local em http://localhost).

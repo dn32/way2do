@@ -121,8 +121,8 @@ subseções abaixo.
 | 0 | Documentação e revisão | analisa o enunciado; propõe alternativas e avalia as propostas do Marcelo; redige e revisa os documentos; valida os diagramas | define os padrões de trabalho; levanta requisitos e propõe soluções (integração, VPS, Cloudflare, regra urgente…); questiona e decide; pede revisões e aponta erros; COMMIT | ✅ documentação revisada e commitada |
 | 1 | Telas no Claude Design (paralela às etapas 2–4) | gera as telas a partir do briefing (apêndice A) e aplica os ajustes pedidos | revisão, solicitação de ajustes e aprovação | ✅ telas aprovadas; marca documentada |
 | 2 | Base do backend | implementa API, banco, seed e autenticação, com testes | preenche o `.env`; revisão; COMMIT | ✅ `0731b89` |
-| 3 | Domínio e casos compartilhados | implementa merge, regra urgente e ordenação, guiado pelos casos | valida a tabela de casos da regra urgente; revisão; COMMIT | ⏳ implementada e testada; aguardando validação dos casos, revisão e COMMIT |
-| 4 | Sincronização no servidor | implementa push e pull com testes de integração; revisão de marco | revisão; COMMIT | ⬜ |
+| 3 | Domínio e casos compartilhados | implementa merge, regra urgente e ordenação, guiado pelos casos | valida a tabela de casos da regra urgente; revisão; COMMIT | ✅ `e710508` |
+| 4 | Sincronização no servidor | implementa push e pull com testes de integração; revisão de marco | revisão; COMMIT | ⏳ implementada, testada e revisada; aguardando COMMIT |
 | 5 | Frontend base | implementa as telas e o banco local; confere no navegador | valida o visual; revisão; COMMIT | ⬜ |
 | 6 | Motor de sincronização e PWA | implementa fila, sync, indicador e Service Worker; testa offline; revisão de marco | revisão; COMMIT | ⬜ |
 | 7 | Integração externa e consumidor simulado | implementa a API de integrações e o worker; subagente faz o consumidor | revisão; COMMIT | ⬜ |
@@ -219,6 +219,17 @@ subseções abaixo.
 - **Marcelo**: revisão; COMMIT.
 - **Revisão de marco**: `code-review` + `security-review` sobre as etapas 2–4; achados corrigidos.
 - **Pronto quando**: testes de integração verdes; revisão sem achados abertos.
+- **Como foi**: push transacional com lock consultivo por usuário, checagem de dono, merge validado, recusa com o
+  estado do servidor, versão e evento uma vez por tarefa por lote, outbox e entregas por assinatura; pull com cursor,
+  paginação e tombstones. Execução real: limite de 1 MB recusado com 413 pelo Kestrel. Revisão de marco (etapas
+  2 a 4): a de segurança não achou vulnerabilidades; a de código achou 10 pontos, todos corrigidos, o principal
+  sendo que um `null` no lote derrubava o push inteiro (500) e travaria a fila do aparelho. Agora cada operação é
+  lida isoladamente; a recusa traz o estado final do lote; o mesmo id criado por dois usuários ao mesmo tempo é
+  tratado; o relógio é lido depois do lock; e as tarefas do lote são carregadas numa consulta só. 25 testes de
+  integração novos (125 no total, estáveis em 3 rodadas), incluindo a prova de que o push espera o lock do usuário
+  e que pulls simultâneos a 20 pushes paralelos não perdem alterações. Checagem de mutação em 8 proteções (lock,
+  dono, versão, filtro do pull, estado alheio na recusa, conflito de id, limite de 1 MB, campo nulo): todas
+  detectadas pelos testes.
 - **Commits**: `feat(sync): push e pull com merge, lock por usuário e outbox`.
 
 ### Etapa 5 — Frontend base
@@ -328,7 +339,7 @@ Preenchido ao fim de cada etapa; vira a seção "Uso de inteligência artificial
 | 1 | agente gerou as 31 pranchetas a partir do briefing; aplicou a rodada de ajuste e encontrou a causa do rótulo escuro (reset de CSS mais específico que as classes dos botões); recalculou o contraste de cada combinação; montou a página da marca a partir do CSS real e conferiu a renderização no navegador (celular e desktop) | briefing aprovado; revisão das telas; pedido de cores mais leves nos botões; pedido da marca como documento e em HTML; aprovação final |
 | 2 | implementação da solução .NET, do modelo de dados e da autenticação; 16 testes de integração com Postgres real; os testes pegaram uma falha de segurança (token aceito também no cabeçalho `Authorization`) e ela foi corrigida; execução real verificada com `curl`; dependência desnecessária removida (`Identity.Core`, já no framework) | liberação com DESENVOLVA; padrões de segurança definidos na etapa 0 (cookie, credenciais fora do repositório); revisão e COMMIT pendentes |
 | 3 | implementação do domínio guiada pelos casos; escrita dos casos de borda; checagem de mutação para provar que os testes detectam quebras | liberação da etapa; regra urgente com negação definida por ele na etapa 0; validação da tabela de casos e COMMIT pendentes |
-| 4 | | |
+| 4 | implementação de push e pull; testes de integração e de concorrência; checagem de mutação; revisão de marco das etapas 2 a 4 com correção dos 10 achados | liberação da etapa ("próxima"); revisão e COMMIT pendentes |
 | 5 | | |
 | 6 | | |
 | 7 | | |

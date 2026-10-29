@@ -223,8 +223,8 @@ public static class TodoMerge
         Title => t.Title,
         Description => t.Description,
         DueDate => t.DueDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-        Priority => t.Priority.ToString().ToLowerInvariant(),
-        Status => t.Status.ToString().ToLowerInvariant(),
+        Priority => TodoFormat.Priority(t.Priority),
+        Status => TodoFormat.Status(t.Status),
         _ => throw new InvalidChangeException(name, "campo desconhecido"),
     };
 

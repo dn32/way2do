@@ -8,9 +8,13 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Way2Do.Api.Auth;
 using Way2Do.Api.Data;
+using Way2Do.Api.Sync;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
+
+// Corpo de requisição de até 1 MB (o maior é o push: até 500 operações).
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 1024 * 1024);
 
 // Banco. A senha pode vir separada (POSTGRES_PASSWORD do .env), para a connection string não carregar segredo.
 var connection = new NpgsqlConnectionStringBuilder(config.GetConnectionString("Default")
@@ -80,6 +84,7 @@ builder.Services.AddRateLimiter(o =>
         _ => new FixedWindowRateLimiterOptions { PermitLimit = loginPermits, Window = loginWindow, QueueLimit = 0 }));
 });
 
+builder.Services.AddScoped<SyncService>();
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
 
@@ -113,6 +118,7 @@ app.UseAuthorization();
 
 app.MapHealthChecks("/health");
 app.MapAuthEndpoints();
+app.MapSyncEndpoints();
 
 if (config.GetValue("Database:InitializeOnStartup", true))
     await DatabaseInitializer.InitializeAsync(app.Services);
