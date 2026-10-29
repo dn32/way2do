@@ -71,6 +71,12 @@ public sealed class WebhookSubscription
 
     public string? DashboardUrl { get; set; }
     public DateTimeOffset? LastResyncAt { get; set; }
+
+    /// <summary>
+    /// Retrato completo pedido (205) e ainda não enfileirado: no máximo um por minuto, então um pedido dentro do
+    /// intervalo fica agendado para o fim dele, e pedidos repetidos se juntam neste mesmo horário.
+    /// </summary>
+    public DateTimeOffset? ResyncDueAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 }
 

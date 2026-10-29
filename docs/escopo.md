@@ -404,13 +404,15 @@ consumidor.
 - Por usuário, e não global: mantém o isolamento entre contas do enunciado ("cada usuário acessa apenas as suas
   próprias tarefas") e dispensa perfis de administrador. Vários usuários podem cadastrar a mesma URL.
 - Assinaturas ficam no Postgres (`webhook_subscriptions`: `id`, `user_id`, `url`, `dashboard_url`,
-  `last_resync_at`, `created_at`; única por usuário + URL).
+  `last_resync_at`, `resync_due_at`, `created_at`; única por usuário + URL). `resync_due_at` é o retrato completo
+  pedido e ainda não enfileirado (abaixo).
 - A tela exige conexão: cadastrar ou remover uma integração é uma ação de servidor e não entra na fila offline.
   **Só o backend faz push** para os consumidores; o dispositivo nunca fala com eles.
-- A URL de entrada é um segredo: a API **devolve a URL mascarada** (só o host e o fim do token) e os logs também
-  registram só a versão mascarada.
-- Até **10 assinaturas por usuário** e limite de tentativas no cadastro: cada cadastro dispara uma requisição do
-  servidor para fora (o `ping`), e sem limite a tela viraria um disparador de requisições para terceiros.
+- A URL de entrada é um segredo: a API **devolve a URL mascarada** (só o host e os 4 últimos caracteres do
+  caminho, ex.: `https://way2do-consumer.<domínio>/…a1b2`) e os logs também registram só a versão mascarada.
+- Até **10 assinaturas por usuário** e limite de tentativas no cadastro (10 por minuto por usuário, 429 acima
+  disso): cada cadastro dispara uma requisição do servidor para fora (o `ping`), e sem limite a tela viraria um
+  disparador de requisições para terceiros.
 
 ### Contrato com o consumidor
 O contrato é o mesmo para qualquer consumidor, não só para o simulado:
@@ -422,8 +424,11 @@ O contrato é o mesmo para qualquer consumidor, não só para o simulado:
 | 5xx, 429, timeout, erro de rede | não entregue; nova tentativa com backoff |
 | 3xx (redirecionamento não é seguido) e outros 4xx | não entregue; nova tentativa com backoff (até o limite) |
 
-Na resposta ao `webhook.ping`, o consumidor **pode** informar `{ "dashboardUrl": "..." }`: um endereço onde o
-usuário acompanha os dados recebidos. É opcional; consumidores sem painel não informam nada.
+Na resposta ao `webhook.ping`, o consumidor **pode** informar um `dashboardUrl`: um endereço onde o usuário
+acompanha os dados recebidos. É opcional; consumidores sem painel não informam nada. Vai no cabeçalho
+**`X-Way2Do-Dashboard-Url`** (em qualquer 2xx) e, numa resposta 200, também pode vir no corpo
+`{ "dashboardUrl": "..." }`. O cabeçalho existe porque a resposta **205 não pode ter corpo** (RFC 9110, 15.3.6),
+e o ping de um consumidor novo é justamente 205. Quando os dois vêm, vale o cabeçalho.
 
 ### Cadastro de uma URL
 Ao salvar, o **backend** (não só o frontend) valida, nesta ordem:
@@ -438,8 +443,10 @@ Ao salvar, o **backend** (não só o frontend) valida, nesta ordem:
      `169.254.169.254` e contornar a validação;
    - timeout de 5 s no cadastro e de 10 s nas entregas; a resposta do consumidor é lida até no máximo 16 KB.
 
-   A configuração `Webhooks:AllowPrivateNetworks` libera a rede privada **apenas no ambiente local**, onde o
-   consumidor é `http://consumer:8080`; na VPS fica desligada e cadastra-se a URL pública do consumidor.
+   A configuração `Webhooks:AllowPrivateNetworks` libera a rede privada e o loopback **apenas no ambiente
+   local**, onde o consumidor é `http://consumer:8080` (Compose) ou `http://localhost:5200` (`dotnet run`); na VPS
+   fica desligada e cadastra-se a URL pública do consumidor. Mesmo ligada, link-local (metadados de nuvem),
+   multicast e reservados continuam bloqueados. O cliente HTTP das entregas também não usa proxy do sistema.
 3. **Teste de entrega**: o backend envia `webhook.ping` e só aceita o cadastro se receber **2xx** em até 5
    segundos. URL errada, token inválido ou consumidor fora do ar são recusados na hora, com a mensagem de erro.
 4. **Link do painel**: se a resposta trouxer `dashboardUrl`, ele é gravado **somente se for `http`/`https`** (uma
@@ -464,7 +471,8 @@ Condições que mantêm o mecanismo seguro:
 - o retrato contém **só o que a assinatura já tem direito de receber** (as tarefas do dono dela);
 - é **assíncrono**: entra na mesma fila do outbox; nada é enviado dentro da resposta;
 - **no máximo um retrato por assinatura por minuto** (`last_resync_at`). Pedidos dentro do intervalo são agendados
-  para o fim dele e agrupados, não descartados — um consumidor com defeito não consegue gerar reenvios em laço;
+  para o fim dele (`resync_due_at`) e agrupados, não descartados — um consumidor com defeito não consegue gerar
+  reenvios em laço. O worker enfileira os retratos vencidos numa transação com `FOR UPDATE SKIP LOCKED`;
 - eventos `todo.snapshot` nunca provocam outro retrato.
 
 ### Fluxo das alterações
@@ -475,6 +483,13 @@ Condições que mantêm o mecanismo seguro:
 3. Após o commit, a API sinaliza o worker (sinal em memória) para entregar imediatamente — latência de
    milissegundos. Um *polling* a cada poucos segundos cobre sinais perdidos e reinícios.
 4. O **worker** (`BackgroundService`) reserva entregas pendentes com `FOR UPDATE SKIP LOCKED` e faz `POST` na URL.
+   A reserva empurra o horário da tentativa por 5 minutos (se a instância cair no meio, outra assume depois
+   disso), em lotes de 50, em ordem de `changeSeq` dentro de cada assinatura e em paralelo entre assinaturas. Cada
+   assinatura envia por conta própria e fica fora da próxima reserva até terminar: um consumidor lento (timeout de
+   10 s) não segura a rodada dos outros. Se a assinatura for removida no meio do envio, nada mais vai para a URL.
+   Quando uma entrega falha, as demais do lote da mesma assinatura voltam para a fila com o mesmo horário, sem
+   contar tentativa: um consumidor fora do ar recebe uma tentativa por rodada, não uma por evento em série. O
+   worker dorme até o sinal, o próximo horário devido ou 5 s, o que vier antes.
 5. Resposta conforme o contrato: 2xx → entregue; 205 → entregue e retrato enfileirado; falha → nova tentativa com
    **backoff exponencial com jitter** (1 s, 2 s, 4 s… até 5 min entre tentativas), por até **24 horas**. Depois
    disso, a entrega fica como `failed` (*dead-letter*), registrada no log. A janela longa cobre um consumidor fora
@@ -503,7 +518,8 @@ Padrão outbox simples: sem tela de acompanhamento das entregas; o estado fica n
 - **Ordenação**: tolerante a desordem por construção. Cada evento traz `todo.version` e o estado completo; o
   consumidor só aplica se `version` for maior que a que já tem. Assim, um evento atrasado por retry nunca
   sobrescreve um mais novo, e uma entrega em dead-letter não trava as seguintes. O mesmo vale para o retrato
-  completo, que corre em paralelo com alterações novas. O worker ainda envia em ordem de `changeSeq`, por boa prática.
+  completo, que corre em paralelo com alterações novas. O worker ainda envia em ordem de `changeSeq` dentro de cada
+  lote, por boa prática; uma entrega em backoff pode ser ultrapassada por uma nova, e a versão resolve.
 - **Recuperação do consumidor**: um consumidor que perdeu o estado pede o retrato com 205 e volta a ficar completo.
 - **Isolamento de falhas**: cada assinatura tem as próprias entregas; um consumidor fora do ar não atrasa os outros.
 - **Autenticidade**: o token secreto na URL (HTTPS na VPS). Assinatura HMAC do corpo fica como evolução (seção 12).
@@ -530,10 +546,19 @@ lendo direto da aplicação, a tela deixaria de provar que a integração funcio
 - **Multiespaço**: qualquer token bem formado é aceito e vira um espaço isolado (como o webhook.site). Quem inventa
   um token só escreve no próprio espaço; adivinhar um token de 256 bits alheio é inviável. Token mal formado →
   **404**.
-- Limites contra abuso: número máximo de espaços, de tarefas e de eventos guardados por espaço, e corpo de
-  requisição de até 64 KB.
+- Formato: `T` são 256 bits em base64url sem padding (43 caracteres); `H` é o SHA-256 do texto de `T` em hex
+  minúsculo (64 caracteres).
+- Limites contra abuso: até 1000 espaços (acima disso, espaço novo recebe **503**: é falta de capacidade do
+  consumidor, e o Way2Do tenta de novo), 5000 tarefas por espaço (tarefa nova acima do limite é descartada com
+  200 e contada em "descartados por limite"; responder 5xx faria o Way2Do reenviar por 24 h sem nunca
+  conseguir), 20 000 `eventId` lembrados por espaço (os mais antigos são esquecidos; a regra de versão continua
+  barrando a reentrega) e corpo de até 64 KB (413). Textos são guardados com o mesmo corte de tamanho do Way2Do.
+- Tipo de evento desconhecido é aceito com 200 e contado como "outros", para um tipo novo no contrato não
+  quebrar o consumidor.
 - A raiz `/` tem um botão **"gerar nova URL"**, que sorteia um `T` e mostra o par. Chaves novas a qualquer momento.
-- O painel envia `Referrer-Policy: no-referrer`; o log de acesso não registra o caminho completo.
+- O painel envia `Referrer-Policy: no-referrer` e `Cache-Control: no-store`; o log de requisições do ASP.NET Core
+  (que gravaria o caminho completo, com o token) fica desligado no código, e o único registro é a criação de um
+  espaço, com os 8 primeiros caracteres de `H`.
 - **Sem XSS no painel**: o conteúdo das tarefas vem de fora (qualquer pessoa pode escrever num espaço que ela mesma
   criou) e é inserido na página só via `textContent`, nunca `innerHTML`; a página envia uma
   `Content-Security-Policy` restritiva (`default-src 'self'`, sem scripts inline).
@@ -546,15 +571,23 @@ Comportamento ao receber:
 - Espaço **vazio** (novo ou perdido num reinício) e evento que não é `todo.snapshot` → aplica o evento e responde
   **205**, pedindo o retrato completo. Inclui o `webhook.ping` do cadastro.
 - Demais casos → deduplica por `eventId`, aplica a regra de versão, registra no log e responde **200**.
-- A resposta ao `webhook.ping` traz `dashboardUrl` = `ViewBaseUrl` + `/v/<SHA-256(T)>`.
+- A resposta ao `webhook.ping` traz `dashboardUrl` = `ViewBaseUrl` + `/v/<SHA-256(T)>` no cabeçalho
+  `X-Way2Do-Dashboard-Url` (e no corpo, quando é 200).
 
 Endpoints:
-- `GET /` — página neutra com o botão "gerar nova URL".
+- `GET /` — página neutra com o botão "gerar nova URL", que chama `POST /new` (devolve um par novo, sem gravar
+  nada: o espaço só existe quando o primeiro evento chega).
 - `POST /in/<T>` — recebe eventos, conforme acima.
 - `GET /v/<H>` — painel administrativo **somente leitura** (abaixo); `GET /v/<H>/state` — o mesmo conteúdo em
   JSON, consumido pela página.
-- `POST /v/<H>/failure-mode` — modo de falha do espaço (taxa de erro ou "fora do ar") para demonstrar retry,
-  backoff e recuperação ao vivo. Altera só o comportamento do próprio consumidor, não os dados do Way2Do.
+- `POST /v/<H>/failure-mode` — modo de falha do espaço para demonstrar retry, backoff e recuperação ao vivo.
+  Altera só o comportamento do próprio consumidor, não os dados do Way2Do. Exige `Content-Type:
+  application/json` (um formulário de outro site não consegue ligá-lo). Modos:
+  - **fora do ar**: toda entrada recebe 503 sem ser processada (consumidor que não responde);
+  - **instável**: o evento é processado, mas em ~50% das vezes a confirmação "se perde" (503). O Way2Do reenvia,
+    e o reenvio aparece como **duplicado descartado**: a entrega at-least-once e a deduplicação acontecendo ao
+    vivo;
+  - **desligado**.
 
 Painel, atualizado automaticamente a cada poucos segundos (dados do espaço):
 
@@ -571,8 +604,10 @@ o painel mostra as reentregas chegando e sendo tratadas sem efeito colateral. Re
 avaliadores mostra o 205 e o retrato completo repondo os dados.
 
 Implementação: HTML estático com um pouco de JavaScript puro (sem framework), servido pela própria Minimal API.
-Estado **em memória**: a perda no reinício é coberta pelo retrato completo (205). Fica fora do Claude Design: é uma
-tela de apoio à demo, não parte do produto.
+Estado **em memória**, com um lock por espaço: a perda no reinício é coberta pelo retrato completo (205). Fica fora
+do Claude Design (é uma tela de apoio à demo, não parte do produto), mas usa os tokens da marca: o
+`docs/design/way2do.css` é embutido no assembly do consumidor e servido em `/way2do.css` (fonte única, sem
+cópia). A contagem "vencidas" é feita na página, pela data local de quem olha, como no app.
 
 ---
 

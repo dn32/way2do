@@ -124,8 +124,8 @@ subseções abaixo.
 | 3 | Domínio e casos compartilhados | implementa merge, regra urgente e ordenação, guiado pelos casos | valida a tabela de casos da regra urgente; revisão; COMMIT | ✅ `e710508` |
 | 4 | Sincronização no servidor | implementa push e pull com testes de integração; revisão de marco | revisão; COMMIT | ✅ `2ee7b8d` |
 | 5 | Frontend base | implementa as telas e o banco local; confere no navegador | valida o visual; revisão; COMMIT | ✅ `ff6818e` |
-| 6 | Motor de sincronização e PWA | implementa fila, sync, indicador e Service Worker; testa offline; revisão de marco | revisão; COMMIT | ⏳ implementada, testada e revisada; aguardando COMMIT |
-| 7 | Integração externa e consumidor simulado | implementa a API de integrações e o worker; subagente faz o consumidor | revisão; COMMIT | ⬜ |
+| 6 | Motor de sincronização e PWA | implementa fila, sync, indicador e Service Worker; testa offline; revisão de marco | revisão; COMMIT | ✅ `67c2ccd` |
+| 7 | Integração externa e consumidor simulado | implementa a API de integrações e o worker; subagente faz o consumidor | revisão; COMMIT | ⏳ implementada, testada e revisada; aguardando COMMIT |
 | 8 | Docker, Compose e VPS | escreve Dockerfiles e Compose; cria o túnel; revisão de marco | informa o domínio; autoriza o túnel; opera a VPS; revisão; COMMIT | ⬜ |
 | 9 | Aceitação ponta a ponta (skill `roteiro-demo`) | cria a skill; executa no navegador e no celular; corrige | disponibiliza o Android; revisão; COMMIT | ⬜ |
 | 10 | README final e conferência | escreve o README; faz a conferência completa; revisão final | revisa o README; revisão; COMMIT | ⬜ |
@@ -286,6 +286,22 @@ subseções abaixo.
 - **Marcelo**: revisão; COMMIT.
 - **Pronto quando**: cadastro com ping funcionando; alteração aparece no painel em menos de 1 s; modo de falha gera
   retry e o painel conta duplicados; reinício do consumidor → 205 → dados repostos.
+- **Como foi**: a sessão principal fez a API (validação anti-SSRF com tabela de IPs, conferência na conexão, sem
+  redirecionamento; cadastro com ping; worker com `SKIP LOCKED`, backoff por 24 h e retrato agendado) e a tela de
+  Integrações; um subagente numa worktree isolada fez o consumidor só a partir do escopo, sem commitar, e a sessão
+  principal revisou o código e integrou. O subagente achou uma falha no contrato: **a resposta 205 não pode ter
+  corpo** (RFC 9110), então o `dashboardUrl` do cadastro nunca chegaria; o link passou a ir no cabeçalho
+  `X-Way2Do-Dashboard-Url` (escopo atualizado). Na integração, o modo "instável" foi ajustado para processar e
+  perder a confirmação, senão o painel nunca mostraria duplicados. Verificado no navegador: cadastro (com recusa
+  de formato e de `169.254.169.254`), retrato completo no cadastro, alteração no painel ~0,2 s depois do commit no
+  servidor (o app ainda espera 2 s de debounce antes de enviar), modo instável (6 tarefas aplicadas uma vez, 9
+  duplicados descartados), fora do ar e recuperação, reinício do consumidor com 205 repondo tudo, tela offline no
+  celular. Revisão de código: 10 achados; 8 corrigidos (entre eles: assinatura removida no meio do envio continuava
+  recebendo o resto do lote; um consumidor lento segurava a rodada de todos, e agora cada assinatura envia por conta
+  própria; conexão que cai no meio da resposta escapava do tratamento), com checagem de mutação; 2 mudam regras do
+  retrato completo e foram levados ao Marcelo. Revisão de segurança: nenhum achado (SSRF por formas de IP, IPv6 e
+  DNS rebinding; vazamento entre usuários; token da URL em respostas, logs e Referer; XSS no painel e no link;
+  CSRF; SQL). Testes: 218 na API, 80 no consumidor, 148 no frontend.
 - **Commits**: `feat(integracao): assinaturas, outbox e webhooks` e `feat(consumidor): consumidor simulado com painel`.
 
 ### Etapa 8 — Docker, Compose e VPS
@@ -363,7 +379,7 @@ Preenchido ao fim de cada etapa; vira a seção "Uso de inteligência artificial
 | 4 | implementação de push e pull; testes de integração e de concorrência; checagem de mutação; revisão de marco das etapas 2 a 4 com correção dos 10 achados | liberação da etapa ("próxima"); revisão e COMMIT pendentes |
 | 5 | implementação do frontend a partir do design aprovado; domínio em TS com paridade testada; verificação no navegador; revisões de código e de segurança com correção de todos os achados; checagem de mutação | liberação da etapa ("próxima"); validação do visual; COMMIT |
 | 6 | motor de sincronização e PWA; testes com servidor em memória; verificação offline no navegador com dois perfis; revisão de marco (código e segurança) com correção dos achados; checagem de mutação | liberação da etapa ("continue"); COMMIT pendente |
-| 7 | | |
+| 7 | API de integrações e worker; tela de Integrações; subagente em worktree para o consumidor (a partir do contrato), revisado e integrado pela sessão principal; verificação ponta a ponta no navegador | liberação da etapa ("continue"); COMMIT pendente |
 | 8 | | |
 | 9 | | |
 | 10 | | |

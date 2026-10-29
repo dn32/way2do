@@ -7,7 +7,7 @@ using Way2Do.Api.Webhooks;
 
 namespace Way2Do.Api.Sync;
 
-public sealed class SyncService(AppDbContext db, TimeProvider clock)
+public sealed class SyncService(AppDbContext db, TimeProvider clock, WebhookSignal webhooks)
 {
     public const int MaxOperationsPerPush = 500;
     public const int DefaultPullLimit = 200;
@@ -129,6 +129,8 @@ public sealed class SyncService(AppDbContext db, TimeProvider clock)
         await db.SaveChangesAsync(ct);
 
         await transaction.CommitAsync(ct);
+        if (events.Count > 0)
+            webhooks.Notify(); // entrega imediata; o polling do worker cobre um sinal perdido
 
         // Recusas trazem o estado ao fim do lote (com versão e change_seq gravados), não um estado intermediário.
         // Uma tarefa nova recusada que nenhuma outra operação criou não existe no servidor: estado nulo.

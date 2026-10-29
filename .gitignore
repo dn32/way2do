@@ -128,3 +128,6 @@ docs/desafio-tecnico-todo-list-offline-first.pdf
 # Credenciais (enviadas por e-mail, nunca versionadas)
 credenciais*
 *.local.md
+
+# Worktrees temporárias de subagentes do Claude Code
+.claude/worktrees/

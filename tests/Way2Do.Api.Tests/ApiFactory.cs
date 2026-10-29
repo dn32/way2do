@@ -20,6 +20,8 @@ public sealed class ApiFactory(string connectionString, IDictionary<string, stri
             ["Auth:AllowedOrigins:0"] = AllowedOrigin,
             ["Seed:Users:Ana:Password"] = AnaPassword,
             ["Seed:Users:Bruno:Password"] = BrunoPassword,
+            // Sem worker em segundo plano: os testes de webhooks rodam as entregas passo a passo (WebhookDispatcher).
+            ["Webhooks:WorkerEnabled"] = "false",
         };
         foreach (var (key, value) in overrides ?? new Dictionary<string, string?>())
             settings[key] = value;

@@ -10,7 +10,8 @@ import { indicatorKind, useBrowserOnline } from '../sync/indicator'
 import { clearRejections, readCursor, readRejections, readStatus, type Rejection } from '../sync/store'
 import { activeFilterCount, filterTasks, NO_FILTERS, tagCounts, type Filters } from './filters'
 import { PriorityField, SearchField, StatusField, TagField } from './FiltersControls'
-import { AlertIcon, CheckIcon, ClipboardIcon, CloseIcon, FilterIcon, InfoIcon, LogOutIcon, MenuIcon, PlusIcon, TagIcon, TrashIcon } from './icons'
+import { AlertIcon, CheckIcon, ClipboardIcon, CloseIcon, LinkIcon, FilterIcon, InfoIcon, LogOutIcon, MenuIcon, PlusIcon, TagIcon, TrashIcon } from './icons'
+import { IntegrationsPanel } from './IntegrationsPanel'
 import { Overlay } from './Overlay'
 import { TaskForm } from './TaskForm'
 import { SyncBar } from './SyncBar'
@@ -42,6 +43,7 @@ export function TasksScreen({ user, onLogout, onSessionExpired }: { user: User; 
   }, [user.id, db])
   const [filters, setFilters] = useState<Filters>(NO_FILTERS)
   const [panel, setPanel] = useState<Panel>({ kind: 'none' })
+  const [view, setView] = useState<'tasks' | 'integrations'>('tasks')
   const [failure, setFailure] = useState<string | null>(null)
   const close = useCallback(() => setPanel({ kind: 'none' }), [])
 
@@ -125,11 +127,19 @@ export function TasksScreen({ user, onLogout, onSessionExpired }: { user: User; 
               Way2Do
             </div>
             <nav className="d-nav" aria-label="Principal">
-              <span className="d-navlink d-navlink--on" aria-current="page">Tarefas</span>
+              <NavLink label="Tarefas" on={view === 'tasks'} onClick={() => setView('tasks')} />
+              <NavLink label="Integrações" on={view === 'integrations'} onClick={() => setView('integrations')} />
               <span className="d-user"><span className="avatar">{user.name.slice(0, 1).toUpperCase()}</span>{user.name}</span>
               <button className="d-navlink" type="button" onClick={askLogout}><LogOutIcon />Sair</button>
             </nav>
           </header>
+          {view === 'integrations' ? (
+            <div className="d-wrap">
+              <main className="d-main">
+                <IntegrationsPanel desktop onSessionExpired={() => void onSessionExpired()} />
+              </main>
+            </div>
+          ) : (
           <div className="d-wrap">
             <aside className="d-side">
               <nav className="panel panel--tags" aria-label="Tags">
@@ -153,6 +163,7 @@ export function TasksScreen({ user, onLogout, onSessionExpired }: { user: User; 
               {list}
             </main>
           </div>
+          )}
         </div>
       ) : (
         <div className="m-app">
@@ -160,13 +171,14 @@ export function TasksScreen({ user, onLogout, onSessionExpired }: { user: User; 
             {syncBar(false)}
             <header className="appbar">
               <div className="appbar__title">
-                <h1 className="brand brand--title">Minhas tarefas</h1>
-                <span className="appbar__sub">{summary}</span>
+                <h1 className="brand brand--title">{view === 'tasks' ? 'Minhas tarefas' : 'Integrações'}</h1>
+                <span className="appbar__sub">{view === 'tasks' ? summary : 'Sistemas que recebem as suas tarefas'}</span>
               </div>
               <button className="iconbtn" type="button" aria-label="Menu da conta" onClick={() => setPanel({ kind: 'menu' })}><MenuIcon /></button>
             </header>
           </div>
-          <main className="scroll">{list}</main>
+          <main className="scroll">{view === 'tasks' ? list : <IntegrationsPanel desktop={false} onSessionExpired={() => void onSessionExpired()} />}</main>
+          {view === 'tasks' && (
           <nav className="bottombar" aria-label="Ações">
             <button className="btn btn--secondary" type="button" onClick={() => setPanel({ kind: 'filters' })}>
               <FilterIcon />Filtros{filterCount > 0 && <span className="count">{filterCount}</span>}
@@ -174,6 +186,7 @@ export function TasksScreen({ user, onLogout, onSessionExpired }: { user: User; 
             <button className="btn btn--secondary" type="button" onClick={() => setPanel({ kind: 'tags' })}><TagIcon />Tags</button>
             <button className="btn btn--primary" type="button" onClick={() => setPanel({ kind: 'form', taskId: null })}><PlusIcon />Nova tarefa</button>
           </nav>
+          )}
         </div>
       )}
 
@@ -239,6 +252,12 @@ export function TasksScreen({ user, onLogout, onSessionExpired }: { user: User; 
         <Overlay title={user.name} desktop={false} onClose={close}>
           <ul className="menu menu--flat">
             <li>
+              <button className="menu__item" type="button" aria-current={view === 'tasks' ? 'page' : undefined} onClick={() => { setView('tasks'); close() }}><CheckIcon />Tarefas</button>
+            </li>
+            <li>
+              <button className="menu__item" type="button" aria-current={view === 'integrations' ? 'page' : undefined} onClick={() => { setView('integrations'); close() }}><LinkIcon />Integrações</button>
+            </li>
+            <li>
               <button className="menu__item menu__item--danger" type="button" onClick={() => { close(); void askLogout() }}><LogOutIcon />Sair</button>
             </li>
           </ul>
@@ -265,6 +284,14 @@ export function TasksScreen({ user, onLogout, onSessionExpired }: { user: User; 
         </Overlay>
       )}
     </div>
+  )
+}
+
+function NavLink({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
+  return (
+    <button className={on ? 'd-navlink d-navlink--on' : 'd-navlink'} type="button" aria-current={on ? 'page' : undefined} onClick={onClick}>
+      {label}
+    </button>
   )
 }
 

@@ -9,7 +9,8 @@ uso de IA do plano.
 ## Estrutura
 
 - `src/Way2Do.Api/` — API ASP.NET Core (.NET 10, Minimal APIs, EF Core + Npgsql), organizada por funcionalidade
-  (`Auth/`, `Sync/`, `Webhooks/`, `Domain/`).
+  (`Auth/`, `Sync/`, `Webhooks/`, `Domain/`). `Webhooks:AllowPrivateNetworks` fica ligado só no
+  `appsettings.Development.json` (integrações para `localhost` e para a rede do Compose).
 - `src/Way2Do.Consumer/` — consumidor externo simulado.
 - `src/web/` — frontend React + Vite + TypeScript (PWA, Dexie).
 - `tests/Way2Do.Api.Tests/` — xUnit (domínio puro + integração com Testcontainers).
@@ -68,6 +69,9 @@ dotnet test Way2Do.slnx                      # sobe um Postgres próprio em cont
 # API em desenvolvimento (http://localhost:5100). Rodar de dentro da pasta do projeto: o appsettings.Development.json
 # é lido do diretório atual.
 set -a && . ./.env && set +a && cd src/Way2Do.Api && dotnet run
+
+# Consumidor simulado (http://localhost:5200), também de dentro da pasta do projeto
+cd src/Way2Do.Consumer && dotnet run
 
 # Frontend (http://localhost:5300; o Vite encaminha /api para a API em 5100)
 cd src/web && npm install && npm run dev

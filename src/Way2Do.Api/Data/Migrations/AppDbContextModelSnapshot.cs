@@ -254,6 +254,10 @@ namespace Way2Do.Api.Data.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_resync_at");
 
+                    b.Property<DateTimeOffset?>("ResyncDueAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resync_due_at");
+
                     b.Property<string>("Url")
                         .IsRequired()
                         .HasMaxLength(2048)
@@ -266,6 +270,10 @@ namespace Way2Do.Api.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_webhook_subscriptions");
+
+                    b.HasIndex("ResyncDueAt")
+                        .HasDatabaseName("ix_webhook_subscriptions_resync_due_at")
+                        .HasFilter("resync_due_at IS NOT NULL");
 
                     b.HasIndex("UserId", "Url")
                         .IsUnique()

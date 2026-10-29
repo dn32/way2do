@@ -9,6 +9,7 @@ using Npgsql;
 using Way2Do.Api.Auth;
 using Way2Do.Api.Data;
 using Way2Do.Api.Sync;
+using Way2Do.Api.Webhooks;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -82,9 +83,28 @@ builder.Services.AddRateLimiter(o =>
     o.AddPolicy(AuthEndpoints.LoginRateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
         http.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = loginPermits, Window = loginWindow, QueueLimit = 0 }));
+    // Cada cadastro de integração faz uma requisição do servidor para fora (o ping): limite por usuário, para a tela
+    // não virar um disparador de requisições para terceiros.
+    o.AddPolicy(IntegrationEndpoints.RegisterRateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
+        http.User.GetUser()?.Id.ToString() ?? http.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = config.GetValue("Webhooks:RegisterRateLimit:PermitLimit", 10),
+            Window = TimeSpan.FromSeconds(config.GetValue("Webhooks:RegisterRateLimit:WindowSeconds", 60)),
+            QueueLimit = 0,
+        }));
 });
 
 builder.Services.AddScoped<SyncService>();
+
+// Integração externa: proteção contra SSRF, cliente HTTP das entregas e worker do outbox.
+var allowPrivateNetworks = config.GetValue("Webhooks:AllowPrivateNetworks", false);
+builder.Services.AddSingleton(new NetworkGuard(allowPrivateNetworks));
+builder.Services.AddSingleton<WebhookHttp>();
+builder.Services.AddSingleton<WebhookSignal>();
+builder.Services.AddSingleton<WebhookDispatcher>();
+if (config.GetValue("Webhooks:WorkerEnabled", true))
+    builder.Services.AddHostedService<WebhookWorker>();
 builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
 
@@ -92,6 +112,8 @@ var app = builder.Build();
 
 if (auth.SigningKeyGenerated)
     app.Logger.LogWarning("Jwt:SigningKey não configurada: chave aleatória gerada; as sessões caem a cada reinício.");
+if (allowPrivateNetworks)
+    app.Logger.LogWarning("Webhooks:AllowPrivateNetworks ligado: integrações podem apontar para a rede interna (só no ambiente local).");
 
 app.UseForwardedHeaders();
 app.UseExceptionHandler();
@@ -112,13 +134,14 @@ app.Use(async (ctx, next) =>
 });
 
 app.UseMiddleware<OriginCheckMiddleware>();
-app.UseRateLimiter();
 app.UseAuthentication();
+app.UseRateLimiter(); // depois da autenticação: o limite do cadastro de integrações é por usuário
 app.UseAuthorization();
 
 app.MapHealthChecks("/health");
 app.MapAuthEndpoints();
 app.MapSyncEndpoints();
+app.MapIntegrationEndpoints();
 
 if (config.GetValue("Database:InitializeOnStartup", true))
     await DatabaseInitializer.InitializeAsync(app.Services);

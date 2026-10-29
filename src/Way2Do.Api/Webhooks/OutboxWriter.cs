@@ -15,6 +15,7 @@ public static class OutboxWriter
     public const string Updated = "todo.updated";
     public const string Deleted = "todo.deleted";
     public const string Snapshot = "todo.snapshot";
+    public const string Ping = "webhook.ping";
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
@@ -30,39 +31,65 @@ public static class OutboxWriter
             .ToListAsync(ct);
 
         foreach (var (task, type) in changes)
+            AddEvent(db, task, type, userName, subscriptions, now);
+    }
+
+    /// <summary>
+    /// Retrato completo para UMA assinatura (o consumidor respondeu 205): um <c>todo.snapshot</c> por tarefa não
+    /// excluída do dono dela, só o que a assinatura já tem direito de receber. Devolve quantos eventos entraram.
+    /// </summary>
+    public static async Task<int> AddSnapshotAsync(AppDbContext db, WebhookSubscription subscription, DateTimeOffset now,
+        CancellationToken ct)
+    {
+        var userName = await db.Users.Where(u => u.Id == subscription.UserId).Select(u => u.UserName).SingleAsync(ct);
+        var tasks = await db.Tasks
+            .AsNoTracking()
+            .Where(t => t.UserId == subscription.UserId && t.DeletedAt == null)
+            .OrderBy(t => t.ChangeSeq)
+            .ToListAsync(ct);
+        foreach (var task in tasks)
+            AddEvent(db, task, Snapshot, userName, [subscription.Id], now);
+        return tasks.Count;
+    }
+
+    /// <summary>Corpo do <c>webhook.ping</c> do cadastro (não passa pelo outbox: o cadastro espera a resposta).</summary>
+    public static string PingPayload(Guid eventId, DateTimeOffset now) =>
+        JsonSerializer.Serialize(new { eventId, type = Ping, occurredAt = now }, Json);
+
+    private static void AddEvent(AppDbContext db, TodoItem task, string type, string userName,
+        IReadOnlyList<Guid> subscriptions, DateTimeOffset now)
+    {
+        var evt = new OutboxEvent
         {
-            var evt = new OutboxEvent
+            Id = Guid.NewGuid(),
+            Type = type,
+            UserId = task.UserId,
+            TaskId = task.Id,
+            TaskVersion = task.Version,
+            ChangeSeq = task.ChangeSeq,
+            OccurredAt = now,
+            Payload = "",
+        };
+        evt.Payload = JsonSerializer.Serialize(new
+        {
+            eventId = evt.Id,
+            type,
+            occurredAt = now,
+            todo = Describe(task, userName),
+        }, Json);
+        db.OutboxEvents.Add(evt);
+
+        foreach (var subscriptionId in subscriptions)
+        {
+            db.WebhookDeliveries.Add(new WebhookDelivery
             {
                 Id = Guid.NewGuid(),
-                Type = type,
-                UserId = userId,
-                TaskId = task.Id,
-                TaskVersion = task.Version,
-                ChangeSeq = task.ChangeSeq,
-                OccurredAt = now,
-                Payload = "",
-            };
-            evt.Payload = JsonSerializer.Serialize(new
-            {
-                eventId = evt.Id,
-                type,
-                occurredAt = now,
-                todo = Describe(task, userName),
-            }, Json);
-            db.OutboxEvents.Add(evt);
-
-            foreach (var subscriptionId in subscriptions)
-            {
-                db.WebhookDeliveries.Add(new WebhookDelivery
-                {
-                    Id = Guid.NewGuid(),
-                    EventId = evt.Id,
-                    SubscriptionId = subscriptionId,
-                    Status = DeliveryStatus.Pending,
-                    NextAttemptAt = now,
-                    CreatedAt = now,
-                });
-            }
+                EventId = evt.Id,
+                SubscriptionId = subscriptionId,
+                Status = DeliveryStatus.Pending,
+                NextAttemptAt = now,
+                CreatedAt = now,
+            });
         }
     }
 

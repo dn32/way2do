@@ -64,6 +64,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(s => s.DashboardUrl).HasMaxLength(2048);
             e.HasOne<User>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(s => new { s.UserId, s.Url }).IsUnique();
+            // Busca do worker: retratos agendados cujo horário chegou.
+            e.HasIndex(s => s.ResyncDueAt).HasFilter("resync_due_at IS NOT NULL");
         });
 
         model.Entity<WebhookDelivery>(e =>
