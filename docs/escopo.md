@@ -96,9 +96,10 @@ Infra: **PostgreSQL** via Docker Compose.
 - Frontend: **Vitest** + `fake-indexeddb` para o motor de sincronização e a regra urgente.
 - Aceitação ponta a ponta: o roteiro da demonstração (seção 14) executado no navegador e num celular Android pela
   skill `roteiro-demo` (plano de execução, seção 2).
-- **Casos compartilhados**: a regra "urgente" e a ordenação existem no cliente (TS) e no servidor (C#). Os casos de
-  teste ficam em um único JSON (`tests/fixtures/urgencia.json`) lido pelas duas suítes, garantindo que as duas
-  implementações concordam.
+- **Casos compartilhados**: a regra "urgente", a ordenação e o merge existem no cliente (TS) e no servidor (C#). Os
+  casos de teste ficam em JSON (`tests/fixtures/urgencia.json`, `ordenacao.json` e `merge.json`) lidos pelas duas
+  suítes, garantindo que as duas implementações concordam. Comparações de texto usam a ordem de código UTF-16, que é
+  a nativa nas duas linguagens (`string.CompareOrdinal` e o `<` do JavaScript), sem depender de configuração regional.
 
 ### Bibliotecas e por quê
 O enunciado pede a justificativa de cada biblioteca. Esta é a lista completa prevista; qualquer acréscimo durante
@@ -171,7 +172,8 @@ duas se perderia. Por isso cada tag guarda `{ present, ts }` (adicionada ou remo
 - o merge decide **tag por tag** pelo timestamp mais recente (mesma regra LWW dos demais campos); no exemplo, o
   resultado é `obra, cliente, financeiro`;
 - empate exato de timestamp: a presença vence (a tag não some por acaso);
-- identidade da tag: texto sem espaços nas pontas e em minúsculas (`Obra` e `obra` são a mesma tag);
+- identidade da tag: forma Unicode NFC, sem espaços nas pontas e em minúsculas (`Obra`, ` obra ` e a forma
+  decomposta de `Ação` são a mesma tag); até 40 caracteres e até 20 tags visíveis por tarefa;
 - para a UI, filtros e eventos da integração, as tags são a lista das entradas com `present: true`.
 
 ---
@@ -186,14 +188,16 @@ reconhece **as variações da palavra** e **ignora menções negadas**.
 Algoritmo (determinístico, sem IA nem dicionário externo; idêntico em C# e TypeScript):
 
 1. **Normaliza** o texto: minúsculas e remoção de acentos (NFD sem diacríticos). "Urgência" → "urgencia",
-   "NÃO" → "nao".
-2. **Separa em tokens**: palavras (sequências de letras/dígitos) e pontuação (`, . ; : ! ? ( ) -` e quebras de linha).
+   "NÃO" → "nao". Em JavaScript: `texto.normalize('NFD').replace(/\p{Mn}/gu, '').toLowerCase().replace(/ς/g, 'σ')`;
+   palavra = `[\p{L}\p{Nd}]`, por code point, nos dois lados.
+2. **Separa em tokens**: palavras (sequências de letras/dígitos) e pontuação (qualquer outro símbolo, como
+   `, . ; : ! ? ( ) - #`, e as quebras de linha). Espaços só separam.
 3. **Termo de urgência**: toda palavra que **começa com `urgen`** — urgente, urgentes, urgência, urgências,
    urgentemente, urgentíssimo.
 4. **Negação**: para cada termo, anda para trás **até 3 palavras**:
    - **palavra de negação** (não, nao, n, ñ, nem, sem, nunca, jamais, nada, nenhum, nenhuma) → menção negada;
-   - **palavra de ligação** (é, está, tá, tem, há, foi, era, será, seja, for, mais, muito, tão, tanto, tipo, de,
-     da, do, um, uma …) → pula e continua olhando;
+   - **palavra de ligação** (e/é, eh, está, tá, tem, há, foi, era, será, seja, for, mais, muito, tão, tanto, tipo,
+     de, da, do, um, uma) → pula e continua olhando;
    - **qualquer outra palavra ou pontuação** → para: a menção não é negada. A negação não atravessa vírgula,
      ponto nem uma palavra "de conteúdo".
 5. A tarefa é **urgente se existir ao menos uma menção não negada** no título ou na descrição.
@@ -219,8 +223,8 @@ interpretadas; a lista de palavras é em português.
 
 A urgência é **derivada** (calculada a partir do texto), não é um campo gravado. Assim não existe estado para
 dessincronizar: uma tarefa editada offline sobe ou desce na hora, porque a ordenação é recalculada a cada
-renderização a partir do banco local. Os casos da tabela acima formam o arquivo de casos compartilhado entre as
-suítes de teste C# e TS.
+renderização a partir do banco local. Os casos da tabela acima, mais 15 casos de borda, formam o arquivo
+`tests/fixtures/urgencia.json`, compartilhado entre as suítes de teste C# e TS.
 
 ### Ordenação padrão da listagem
 1. **Pendentes antes de concluídas**: tarefa concluída vai para o fim, **mesmo que seja urgente** (já não exige
@@ -278,7 +282,8 @@ pelo `useLiveQuery`. O cursor só avança (grava-se o maior entre o atual e o re
 
 ### Validação, limites e operações recusadas
 - O servidor valida cada operação: título obrigatório e com até 200 caracteres, descrição até 4.000, até 20 tags de
-  até 40 caracteres, enums válidos, data válida. O formulário aplica as mesmas regras, então uma recusa só acontece
+  até 40 caracteres, enums válidos, data válida. Texto com caractere nulo ou UTF-16 inválido (que o Postgres não grava) também é
+  recusado, em vez de virar erro 500 na gravação. O formulário aplica as mesmas regras, então uma recusa só acontece
   por defeito ou adulteração do cliente.
 - Lote de push com até 500 operações e corpo de até 1 MB; o cliente divide filas maiores em vários lotes.
 - A resposta do push traz o resultado **por operação**: `aceita` ou `recusada` (com o motivo). Para uma operação
@@ -307,8 +312,17 @@ cliente usam o mesmo algoritmo), **para cada campo vence o valor com timestamp m
   Como os ids são UUIDs gerados no cliente, não existe "recriar a mesma tarefa".
 - **Relógio do cliente**: os timestamps vêm do aparelho. O servidor **limita timestamps no futuro ao horário do
   servidor**, para que um aparelho com relógio adiantado não vença todas as disputas para sempre.
-- Empate exato de timestamp: desempate determinístico pelo valor (ordem lexicográfica), para que todos os
-  aparelhos convirjam para o mesmo resultado.
+- Empate exato de timestamp: vence o maior valor na ordem de código UTF-16, com nulo abaixo de qualquer valor, para
+  que todos os aparelhos convirjam para o mesmo resultado em qualquer ordem de aplicação.
+- **A alteração é validada inteira antes de qualquer escrita**: um valor inválido recusa a operação toda e a tarefa
+  fica intocada (nunca "meio aplicada").
+- **Data de criação** é definida na criação e não muda depois.
+- **Excluir uma tarefa que a cópia nunca viu não cria nada** (ex.: criada e excluída offline antes de sincronizar).
+- **Timestamps truncados em milissegundos**, a precisão do JavaScript, para que servidor e cliente comparem os mesmos
+  valores.
+- O merge distingue **mudança de conteúdo** (um valor visível mudou: nova `version` e evento da integração) de
+  **mudança só de metadados** (ex.: o mesmo valor com timestamp mais novo: grava, mas não gera evento).
+- Casos em `tests/fixtures/merge.json`.
 
 ### Logout com alterações pendentes
 - Ao sair, se houver alterações na fila, o app **avisa**: "há N alterações não sincronizadas; elas serão enviadas

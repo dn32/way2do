@@ -28,7 +28,8 @@ Consumidor 5200 · PostgreSQL 5433. Não usar 5173, 8080 nem 5432 (ocupadas por 
   Firebase, Azure Mobile Apps etc.). Dexie é só armazenamento.
 - **Um único caminho de escrita**: tarefas só são gravadas no servidor via `POST /api/sync/push`, passando pelo merge.
 - **Regra "urgente" e ordenação existem em C# e em TS.** Qualquer mudança vale para os dois lados e para
-  `tests/fixtures/urgencia.json`, que as duas suítes consomem.
+  `tests/fixtures/urgencia.json`, que as duas suítes consomem. O mesmo vale para a ordenação (`ordenacao.json`) e
+  o merge (`merge.json`).
 - **Merge LWW por campo** é o mesmo algoritmo no cliente e no servidor; mudar um exige mudar o outro.
 - Sem super-engenharia: nada de broker, cache distribuído ou camadas extras sem uma justificativa registrada no escopo.
 - **Interface segue a marca**: cores, fontes, raios, ícones e componentes de [docs/marca.html](docs/marca.html), com os

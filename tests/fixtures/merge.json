@@ -1,0 +1,411 @@
+{
+  "descricao": "Merge LWW por campo (escopo, seção 5). \"atual\" é a cópia existente (null = tarefa nova), \"alteracao\" é o que chega, \"agora\" é o relógio de quem aplica (o servidor limita timestamps no futuro a ele). \"esperado\" lista os campos com timestamp, as tags e a exclusão depois do merge. Lido pelas suítes de C# e de TypeScript.",
+  "cenarios": [
+    {
+      "nome": "alterações em campos diferentes se somam (título num aparelho, status no outro)",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": {
+          "title": { "valor": "Revisar orçamento do galpão", "ts": "2026-10-29T12:00:00Z" },
+          "status": { "valor": "pending", "ts": "2026-10-29T10:00:00Z" }
+        },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "alteracao": { "campos": { "status": { "valor": "done", "ts": "2026-10-29T11:00:00Z" } } },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": {
+          "title": { "valor": "Revisar orçamento do galpão", "ts": "2026-10-29T12:00:00Z" },
+          "status": { "valor": "done", "ts": "2026-10-29T11:00:00Z" }
+        },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "mudou": true,
+      "conteudoMudou": true
+    },
+    {
+      "nome": "no mesmo campo, a alteração mais antiga perde",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Versão do desktop", "ts": "2026-10-29T12:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "alteracao": { "campos": { "title": { "valor": "Versão do celular", "ts": "2026-10-29T11:00:00Z" } } },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Versão do desktop", "ts": "2026-10-29T12:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "mudou": false,
+      "conteudoMudou": false
+    },
+    {
+      "nome": "no mesmo campo, a alteração mais recente vence",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "priority": { "valor": "low", "ts": "2026-10-29T10:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "alteracao": { "campos": { "priority": { "valor": "high", "ts": "2026-10-29T11:00:00Z" } } },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "priority": { "valor": "high", "ts": "2026-10-29T11:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "mudou": true,
+      "conteudoMudou": true
+    },
+    {
+      "nome": "empate exato de timestamp: vence o maior valor (Beta > Alfa)",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Alfa", "ts": "2026-10-29T11:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "alteracao": { "campos": { "title": { "valor": "Beta", "ts": "2026-10-29T11:00:00Z" } } },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Beta", "ts": "2026-10-29T11:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "mudou": true,
+      "conteudoMudou": true
+    },
+    {
+      "nome": "empate exato na ordem inversa converge para o mesmo valor",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Beta", "ts": "2026-10-29T11:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "alteracao": { "campos": { "title": { "valor": "Alfa", "ts": "2026-10-29T11:00:00Z" } } },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Beta", "ts": "2026-10-29T11:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "mudou": false,
+      "conteudoMudou": false
+    },
+    {
+      "nome": "empate exato com nulo: qualquer valor fica acima do nulo",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "description": { "valor": null, "ts": "2026-10-29T11:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "alteracao": { "campos": { "description": { "valor": "Levar escada", "ts": "2026-10-29T11:00:00Z" } } },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "description": { "valor": "Levar escada", "ts": "2026-10-29T11:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "mudou": true,
+      "conteudoMudou": true
+    },
+    {
+      "nome": "tags adicionadas em aparelhos diferentes se somam",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": {},
+        "tags": {
+          "obra": { "presente": true, "ts": "2026-10-29T09:00:00Z" },
+          "cliente": { "presente": true, "ts": "2026-10-29T10:00:00Z" }
+        },
+        "excluidaEm": null
+      },
+      "alteracao": { "tags": { "financeiro": { "presente": true, "ts": "2026-10-29T11:00:00Z" } } },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": {},
+        "tags": {
+          "obra": { "presente": true, "ts": "2026-10-29T09:00:00Z" },
+          "cliente": { "presente": true, "ts": "2026-10-29T10:00:00Z" },
+          "financeiro": { "presente": true, "ts": "2026-10-29T11:00:00Z" }
+        },
+        "excluidaEm": null
+      },
+      "mudou": true,
+      "conteudoMudou": true
+    },
+    {
+      "nome": "tag removida não volta por uma cópia antiga",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": {},
+        "tags": { "obra": { "presente": false, "ts": "2026-10-29T12:00:00Z" } },
+        "excluidaEm": null
+      },
+      "alteracao": { "tags": { "obra": { "presente": true, "ts": "2026-10-29T10:00:00Z" } } },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": {},
+        "tags": { "obra": { "presente": false, "ts": "2026-10-29T12:00:00Z" } },
+        "excluidaEm": null
+      },
+      "mudou": false,
+      "conteudoMudou": false
+    },
+    {
+      "nome": "empate exato de tag: a presença vence; nome da tag normalizado",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": {},
+        "tags": { "obra": { "presente": false, "ts": "2026-10-29T11:00:00Z" } },
+        "excluidaEm": null
+      },
+      "alteracao": { "tags": { " Obra ": { "presente": true, "ts": "2026-10-29T11:00:00Z" } } },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": {},
+        "tags": { "obra": { "presente": true, "ts": "2026-10-29T11:00:00Z" } },
+        "excluidaEm": null
+      },
+      "mudou": true,
+      "conteudoMudou": true
+    },
+    {
+      "nome": "exclusão vence edição posterior",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Comprar EPI", "ts": "2026-10-29T09:00:00Z" } },
+        "tags": {},
+        "excluidaEm": "2026-10-29T10:00:00Z"
+      },
+      "alteracao": { "campos": { "title": { "valor": "Comprar EPI e luvas", "ts": "2026-10-29T12:00:00Z" } } },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Comprar EPI", "ts": "2026-10-29T09:00:00Z" } },
+        "tags": {},
+        "excluidaEm": "2026-10-29T10:00:00Z"
+      },
+      "mudou": false,
+      "conteudoMudou": false
+    },
+    {
+      "nome": "exclusão e edição na mesma alteração: a exclusão vence e a edição é ignorada",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Comprar EPI", "ts": "2026-10-29T09:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "alteracao": {
+        "campos": { "title": { "valor": "Comprar EPI e luvas", "ts": "2026-10-29T11:00:00Z" } },
+        "excluidaEm": "2026-10-29T11:30:00Z"
+      },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Comprar EPI", "ts": "2026-10-29T09:00:00Z" } },
+        "tags": {},
+        "excluidaEm": "2026-10-29T11:30:00Z"
+      },
+      "mudou": true,
+      "conteudoMudou": true
+    },
+    {
+      "nome": "timestamp no futuro é limitado ao relógio de quem aplica",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Original", "ts": "2026-10-29T10:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "alteracao": { "campos": { "title": { "valor": "Relógio adiantado", "ts": "2099-01-01T00:00:00Z" } } },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Relógio adiantado", "ts": "2026-10-29T13:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "mudou": true,
+      "conteudoMudou": true
+    },
+    {
+      "nome": "tarefa nova criada offline",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": null,
+      "alteracao": {
+        "criadaEm": "2026-10-29T08:00:00Z",
+        "campos": {
+          "title": { "valor": "Urgente: trocar disjuntor do galpão 3", "ts": "2026-10-29T08:00:00Z" },
+          "priority": { "valor": "high", "ts": "2026-10-29T08:00:00Z" },
+          "dueDate": { "valor": "2026-10-29", "ts": "2026-10-29T08:00:00Z" }
+        },
+        "tags": { "obra": { "presente": true, "ts": "2026-10-29T08:00:00Z" } }
+      },
+      "esperado": {
+        "criadaEm": "2026-10-29T08:00:00Z",
+        "campos": {
+          "title": { "valor": "Urgente: trocar disjuntor do galpão 3", "ts": "2026-10-29T08:00:00Z" },
+          "priority": { "valor": "high", "ts": "2026-10-29T08:00:00Z" },
+          "dueDate": { "valor": "2026-10-29", "ts": "2026-10-29T08:00:00Z" }
+        },
+        "tags": { "obra": { "presente": true, "ts": "2026-10-29T08:00:00Z" } },
+        "excluidaEm": null
+      },
+      "mudou": true,
+      "conteudoMudou": true
+    },
+    {
+      "nome": "reenvio da mesma alteração não muda nada (idempotente)",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "status": { "valor": "done", "ts": "2026-10-29T11:00:00Z" } },
+        "tags": { "obra": { "presente": true, "ts": "2026-10-29T11:00:00Z" } },
+        "excluidaEm": null
+      },
+      "alteracao": {
+        "campos": { "status": { "valor": "done", "ts": "2026-10-29T11:00:00Z" } },
+        "tags": { "obra": { "presente": true, "ts": "2026-10-29T11:00:00Z" } }
+      },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "status": { "valor": "done", "ts": "2026-10-29T11:00:00Z" } },
+        "tags": { "obra": { "presente": true, "ts": "2026-10-29T11:00:00Z" } },
+        "excluidaEm": null
+      },
+      "mudou": false,
+      "conteudoMudou": false
+    },
+    {
+      "nome": "mesmo valor com timestamp mais novo: grava o timestamp, mas não é mudança de conteúdo",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "status": { "valor": "done", "ts": "2026-10-29T10:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "alteracao": { "campos": { "status": { "valor": "done", "ts": "2026-10-29T12:00:00Z" } } },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "status": { "valor": "done", "ts": "2026-10-29T12:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "mudou": true,
+      "conteudoMudou": false
+    },
+    {
+      "nome": "entre duas exclusões fica a mais antiga",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Comprar EPI", "ts": "2026-10-29T09:00:00Z" } },
+        "tags": {},
+        "excluidaEm": "2026-10-29T11:30:00Z"
+      },
+      "alteracao": { "excluidaEm": "2026-10-29T11:00:00Z" },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Comprar EPI", "ts": "2026-10-29T09:00:00Z" } },
+        "tags": {},
+        "excluidaEm": "2026-10-29T11:00:00Z"
+      },
+      "mudou": true,
+      "conteudoMudou": false
+    },
+    {
+      "nome": "a data de criação não muda depois da criação",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Comprar EPI", "ts": "2026-10-29T09:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "alteracao": {
+        "criadaEm": "1970-01-01T00:00:00Z",
+        "campos": { "title": { "valor": "Comprar EPI e luvas", "ts": "2026-10-29T10:00:00Z" } }
+      },
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": { "title": { "valor": "Comprar EPI e luvas", "ts": "2026-10-29T10:00:00Z" } },
+        "tags": {},
+        "excluidaEm": null
+      },
+      "mudou": true,
+      "conteudoMudou": true
+    },
+    {
+      "nome": "excluir uma tarefa desconhecida não cria nada",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": null,
+      "alteracao": {
+        "campos": { "title": { "valor": "Criada e excluída offline", "ts": "2026-10-29T10:00:00Z" } },
+        "excluidaEm": "2026-10-29T10:05:00Z"
+      },
+      "esperado": null,
+      "mudou": false,
+      "conteudoMudou": false
+    },
+    {
+      "nome": "tarefa nova sem título é recusada",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": null,
+      "alteracao": { "campos": { "status": { "valor": "done", "ts": "2026-10-29T10:00:00Z" } } },
+      "erro": "title",
+      "esperado": null,
+      "mudou": false,
+      "conteudoMudou": false
+    },
+    {
+      "nome": "um valor inválido recusa a alteração inteira, sem aplicar os campos válidos",
+      "agora": "2026-10-29T13:00:00Z",
+      "atual": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": {
+          "title": { "valor": "Comprar EPI", "ts": "2026-10-29T09:00:00Z" },
+          "priority": { "valor": "low", "ts": "2026-10-29T09:00:00Z" }
+        },
+        "tags": { "obra": { "presente": true, "ts": "2026-10-29T09:00:00Z" } },
+        "excluidaEm": null
+      },
+      "alteracao": {
+        "campos": {
+          "title": { "valor": "Título que não pode ficar", "ts": "2026-10-29T10:00:00Z" },
+          "priority": { "valor": "urgentissima", "ts": "2026-10-29T10:00:00Z" }
+        },
+        "tags": { "cliente": { "presente": true, "ts": "2026-10-29T10:00:00Z" } }
+      },
+      "erro": "priority",
+      "esperado": {
+        "criadaEm": "2026-10-29T09:00:00Z",
+        "campos": {
+          "title": { "valor": "Comprar EPI", "ts": "2026-10-29T09:00:00Z" },
+          "priority": { "valor": "low", "ts": "2026-10-29T09:00:00Z" }
+        },
+        "tags": { "obra": { "presente": true, "ts": "2026-10-29T09:00:00Z" } },
+        "excluidaEm": null
+      },
+      "mudou": false,
+      "conteudoMudou": false
+    }
+  ]
+}

@@ -120,8 +120,8 @@ subseções abaixo.
 |---|---|---|---|---|
 | 0 | Documentação e revisão | analisa o enunciado; propõe alternativas e avalia as propostas do Marcelo; redige e revisa os documentos; valida os diagramas | define os padrões de trabalho; levanta requisitos e propõe soluções (integração, VPS, Cloudflare, regra urgente…); questiona e decide; pede revisões e aponta erros; COMMIT | ✅ documentação revisada e commitada |
 | 1 | Telas no Claude Design (paralela às etapas 2–4) | gera as telas a partir do briefing (apêndice A) e aplica os ajustes pedidos | revisão, solicitação de ajustes e aprovação | ✅ telas aprovadas; marca documentada |
-| 2 | Base do backend | implementa API, banco, seed e autenticação, com testes | preenche o `.env`; revisão; COMMIT | ⏳ implementada e testada; aguardando revisão e COMMIT |
-| 3 | Domínio e casos compartilhados | implementa merge, regra urgente e ordenação, guiado pelos casos | valida a tabela de casos da regra urgente; revisão; COMMIT | ⬜ |
+| 2 | Base do backend | implementa API, banco, seed e autenticação, com testes | preenche o `.env`; revisão; COMMIT | ✅ `0731b89` |
+| 3 | Domínio e casos compartilhados | implementa merge, regra urgente e ordenação, guiado pelos casos | valida a tabela de casos da regra urgente; revisão; COMMIT | ⏳ implementada e testada; aguardando validação dos casos, revisão e COMMIT |
 | 4 | Sincronização no servidor | implementa push e pull com testes de integração; revisão de marco | revisão; COMMIT | ⬜ |
 | 5 | Frontend base | implementa as telas e o banco local; confere no navegador | valida o visual; revisão; COMMIT | ⬜ |
 | 6 | Motor de sincronização e PWA | implementa fila, sync, indicador e Service Worker; testa offline; revisão de marco | revisão; COMMIT | ⬜ |
@@ -194,11 +194,20 @@ subseções abaixo.
 
 ### Etapa 3 — Domínio e casos compartilhados
 - **Entregas**: merge LWW por campo (inclui tags por item e exclusão vencendo), regra urgente com negação,
-  ordenação, normalização de texto; `tests/fixtures/urgencia.json` (e casos de merge).
+  ordenação, normalização de texto; casos compartilhados em `tests/fixtures/` (`urgencia.json`, `ordenacao.json`,
+  `merge.json`).
 - **IA**: implementa em C# primeiro, com os testes dirigidos pelos casos; a versão TS vem na etapa 5 contra os
   mesmos casos.
 - **Marcelo**: revisar a tabela de casos da regra urgente (é regra de produto); revisão; COMMIT.
 - **Pronto quando**: todos os casos da tabela do escopo (seção 4) e os cenários de conflito (seção 5) passam.
+- **Como foi**: regra urgente, ordenação e merge em C# puro (`src/Way2Do.Api/Domain/`), sem banco; 28 casos de
+  urgência (os 13 do escopo + 15 de borda), 2 cenários de ordenação e 20 de merge em JSON. A
+  revisão de código achou que uma alteração inválida deixava a tarefa meio aplicada: o merge passou a validar tudo
+  antes de escrever, e ganhou os limites de tamanho, título obrigatório na criação, criação imutável, exclusão de
+  tarefa desconhecida como no-op, timestamps em milissegundos e normalização de texto equivalente à do JavaScript.
+  Checagem de mutação: quebrar qualquer uma de 8 regras faz os testes falharem. A revisão de segurança não achou
+  vulnerabilidades; três observações de convergência e robustez foram corrigidas (sigma final nas tags, título só
+  com espaços invisíveis, caractere nulo e UTF-16 inválido). 100 testes no total.
 - **Commits**: `feat(dominio): merge por campo, regra urgente e ordenação`.
 
 ### Etapa 4 — Sincronização no servidor
@@ -318,7 +327,7 @@ Preenchido ao fim de cada etapa; vira a seção "Uso de inteligência artificial
 | 0 | leitura do enunciado; propostas de arquitetura com alternativas e recomendação (PostgreSQL + outbox, LWW por campo, lock por usuário, tags, cookie `HttpOnly`, anti-SSRF, código 205); avaliação crítica das propostas do Marcelo; redação dos documentos; revisões de segurança e lacunas; validação dos diagramas | padrões de trabalho (portões, revisão antes de commit, credenciais fora do repositório); requisitos e soluções propostos por ele (negação na regra urgente, VPS com Cloudflare, consumidor com painel e métricas, cadastro por um campo só, par de URLs sem login, URLs que sobrevivem ao reinício, retrato pedido pelo código de resposta, prova no celular real); questionamentos que mudaram o desenho; revisões que ele pediu e erros que ele encontrou; todas as decisões finais |
 | 1 | agente gerou as 31 pranchetas a partir do briefing; aplicou a rodada de ajuste e encontrou a causa do rótulo escuro (reset de CSS mais específico que as classes dos botões); recalculou o contraste de cada combinação; montou a página da marca a partir do CSS real e conferiu a renderização no navegador (celular e desktop) | briefing aprovado; revisão das telas; pedido de cores mais leves nos botões; pedido da marca como documento e em HTML; aprovação final |
 | 2 | implementação da solução .NET, do modelo de dados e da autenticação; 16 testes de integração com Postgres real; os testes pegaram uma falha de segurança (token aceito também no cabeçalho `Authorization`) e ela foi corrigida; execução real verificada com `curl`; dependência desnecessária removida (`Identity.Core`, já no framework) | liberação com DESENVOLVA; padrões de segurança definidos na etapa 0 (cookie, credenciais fora do repositório); revisão e COMMIT pendentes |
-| 3 | | |
+| 3 | implementação do domínio guiada pelos casos; escrita dos casos de borda; checagem de mutação para provar que os testes detectam quebras | liberação da etapa; regra urgente com negação definida por ele na etapa 0; validação da tabela de casos e COMMIT pendentes |
 | 4 | | |
 | 5 | | |
 | 6 | | |

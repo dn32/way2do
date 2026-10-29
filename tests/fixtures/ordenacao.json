@@ -1,0 +1,45 @@
+{
+  "descricao": "Ordenação padrão da listagem (escopo, seção 4). As tarefas estão embaralhadas; \"esperado\" é a ordem dos ids depois de ordenar. Lido pelas suítes de C# e de TypeScript.",
+  "cenarios": [
+    {
+      "nome": "regras combinadas",
+      "tarefas": [
+        { "id": "00000000-0000-0000-0000-00000000000a", "titulo": "Comprar EPI", "descricao": null, "status": "pending", "prioridade": "low", "vencimento": null, "criadaEm": "2026-10-01T10:00:00Z" },
+        { "id": "00000000-0000-0000-0000-00000000000b", "titulo": "Urgente: isolar quadro", "descricao": null, "status": "done", "prioridade": "high", "vencimento": "2026-10-20", "criadaEm": "2026-10-01T09:00:00Z" },
+        { "id": "00000000-0000-0000-0000-00000000000c", "titulo": "Pagar fornecedor", "descricao": null, "status": "pending", "prioridade": "high", "vencimento": "2026-10-27", "criadaEm": "2026-10-02T10:00:00Z" },
+        { "id": "00000000-0000-0000-0000-00000000000d", "titulo": "Enviar laudo", "descricao": "urgente, cliente aguardando", "status": "pending", "prioridade": "medium", "vencimento": "2026-11-05", "criadaEm": "2026-10-03T10:00:00Z" },
+        { "id": "00000000-0000-0000-0000-00000000000e", "titulo": "Urgente: trocar disjuntor", "descricao": null, "status": "pending", "prioridade": "high", "vencimento": "2026-10-29", "criadaEm": "2026-10-04T10:00:00Z" },
+        { "id": "00000000-0000-0000-0000-00000000000f", "titulo": "Revisar orçamento — não é urgente", "descricao": null, "status": "pending", "prioridade": "medium", "vencimento": "2026-10-27", "criadaEm": "2026-10-05T10:00:00Z" },
+        { "id": "00000000-0000-0000-0000-000000000010", "titulo": "Arquivar notas", "descricao": null, "status": "done", "prioridade": "low", "vencimento": null, "criadaEm": "2026-09-01T10:00:00Z" }
+      ],
+      "esperado": [
+        "00000000-0000-0000-0000-00000000000e",
+        "00000000-0000-0000-0000-00000000000d",
+        "00000000-0000-0000-0000-00000000000c",
+        "00000000-0000-0000-0000-00000000000f",
+        "00000000-0000-0000-0000-00000000000a",
+        "00000000-0000-0000-0000-00000000000b",
+        "00000000-0000-0000-0000-000000000010"
+      ],
+      "explicacao": "pendentes urgentes por vencimento (e, d); pendentes comuns por vencimento e, no empate, prioridade (c alta antes de f média); sem vencimento no fim (a); concluídas no fim, urgente primeiro (b, depois 10)"
+    },
+    {
+      "nome": "desempates: prioridade, criação e id",
+      "tarefas": [
+        { "id": "00000000-0000-0000-0000-000000000003", "titulo": "C", "descricao": null, "status": "pending", "prioridade": "medium", "vencimento": null, "criadaEm": "2026-10-01T10:00:00Z" },
+        { "id": "00000000-0000-0000-0000-000000000002", "titulo": "B", "descricao": null, "status": "pending", "prioridade": "medium", "vencimento": null, "criadaEm": "2026-10-01T10:00:00Z" },
+        { "id": "00000000-0000-0000-0000-000000000004", "titulo": "D", "descricao": null, "status": "pending", "prioridade": "medium", "vencimento": null, "criadaEm": "2026-09-30T10:00:00Z" },
+        { "id": "00000000-0000-0000-0000-000000000001", "titulo": "A", "descricao": null, "status": "pending", "prioridade": "high", "vencimento": null, "criadaEm": "2026-10-09T10:00:00Z" },
+        { "id": "00000000-0000-0000-0000-000000000005", "titulo": "E", "descricao": null, "status": "pending", "prioridade": "low", "vencimento": null, "criadaEm": "2026-09-01T10:00:00Z" }
+      ],
+      "esperado": [
+        "00000000-0000-0000-0000-000000000001",
+        "00000000-0000-0000-0000-000000000004",
+        "00000000-0000-0000-0000-000000000002",
+        "00000000-0000-0000-0000-000000000003",
+        "00000000-0000-0000-0000-000000000005"
+      ],
+      "explicacao": "alta antes de média antes de baixa; entre médias, criação mais antiga (4); mesma criação, menor id (2 antes de 3)"
+    }
+  ]
+}

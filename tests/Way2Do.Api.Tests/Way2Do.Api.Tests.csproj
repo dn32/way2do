@@ -19,6 +19,11 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- Casos compartilhados com a suíte do frontend (tests/fixtures). -->
+  <ItemGroup>
+    <None Include="..\fixtures\*.json" Link="fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Way2Do.Api\Way2Do.Api.csproj" />
   </ItemGroup>

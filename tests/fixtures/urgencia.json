@@ -1,0 +1,34 @@
+{
+  "descricao": "Casos da regra \"urgente\" (escopo, seção 4). Lidos pelas suítes de C# e de TypeScript: as duas implementações precisam concordar em todos.",
+  "casos": [
+    { "titulo": "Urgente: ligar para o cliente", "descricao": null, "urgente": true, "motivo": "termo sem negação" },
+    { "titulo": "É URGENTE", "descricao": null, "urgente": true, "motivo": "maiúsculas ignoradas" },
+    { "titulo": "#urgente revisar contrato", "descricao": null, "urgente": true, "motivo": "# é separador" },
+    { "titulo": "Preciso disso urgentemente", "descricao": null, "urgente": true, "motivo": "variação da palavra" },
+    { "titulo": "Tarefa com urgência", "descricao": null, "urgente": true, "motivo": "variação da palavra" },
+    { "titulo": "não é urgente", "descricao": null, "urgente": false, "motivo": "negação + palavra de ligação" },
+    { "titulo": "tarefa não urgente", "descricao": null, "urgente": false, "motivo": "negação imediata" },
+    { "titulo": "tarefa não tem urgência", "descricao": null, "urgente": false, "motivo": "negação + palavra de ligação" },
+    { "titulo": "sem urgência", "descricao": null, "urgente": false, "motivo": "\"sem\" é negação" },
+    { "titulo": "nada urgente por aqui", "descricao": null, "urgente": false, "motivo": "\"nada\" é negação" },
+    { "titulo": "Não esquecer: urgente!", "descricao": null, "urgente": true, "motivo": "os dois-pontos interrompem a negação" },
+    { "titulo": "Não esquecer de ligar urgente", "descricao": null, "urgente": true, "motivo": "\"ligar\" não é palavra de ligação: a busca para antes do \"não\"" },
+    { "titulo": "urgente", "descricao": "não é urgente", "urgente": true, "motivo": "basta uma menção não negada" },
+
+    { "titulo": "Revisar orçamento", "descricao": "não é urgente", "urgente": false, "motivo": "menção negada na descrição" },
+    { "titulo": "Revisar orçamento", "descricao": "Urgente: cliente aguardando", "urgente": true, "motivo": "menção na descrição" },
+    { "titulo": "URGENTÍSSIMO trocar disjuntor", "descricao": null, "urgente": true, "motivo": "variação com acento e maiúsculas" },
+    { "titulo": "nao e urgente", "descricao": null, "urgente": false, "motivo": "negação sem acento" },
+    { "titulo": "n é urgente", "descricao": null, "urgente": false, "motivo": "\"n\" abreviado é negação" },
+    { "titulo": "ñ urgente", "descricao": null, "urgente": false, "motivo": "\"ñ\" vira \"n\" na normalização" },
+    { "titulo": "não é muito urgente", "descricao": null, "urgente": false, "motivo": "duas palavras de ligação ainda dentro do limite de 3" },
+    { "titulo": "não é tão tanto muito urgente", "descricao": null, "urgente": true, "motivo": "a negação está a mais de 3 palavras de distância" },
+    { "titulo": "não, urgente", "descricao": null, "urgente": true, "motivo": "a vírgula interrompe a negação" },
+    { "titulo": "sem\nurgência", "descricao": null, "urgente": true, "motivo": "a quebra de linha interrompe a negação" },
+    { "titulo": "não é urgente, mas é urgente o laudo", "descricao": null, "urgente": true, "motivo": "a segunda menção não está negada" },
+    { "titulo": "Ação insurgente", "descricao": null, "urgente": false, "motivo": "\"insurgente\" não começa com \"urgen\"" },
+    { "titulo": "Isso urge", "descricao": null, "urgente": false, "motivo": "\"urge\" não começa com \"urgen\"" },
+    { "titulo": "Comprar EPI", "descricao": null, "urgente": false, "motivo": "sem menção" },
+    { "titulo": "", "descricao": "", "urgente": false, "motivo": "texto vazio" }
+  ]
+}
