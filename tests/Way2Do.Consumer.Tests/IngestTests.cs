@@ -35,16 +35,19 @@ public sealed class IngestTests(SharedConsumer consumer) : IClassFixture<SharedC
     }
 
     [Fact]
-    public async Task Retrato_num_espaco_vazio_recebe_200_e_nunca_pede_outro_retrato()
+    public async Task Retrato_que_recria_o_espaco_pede_outro_retrato_e_os_seguintes_nao()
     {
+        // Consumidor reiniciou no meio de um retrato: as tarefas que vieram antes se perderam.
         var token = Events.NewToken();
 
-        var response = await _client.Send(token, Events.Todo(EventTypes.Snapshot, Guid.NewGuid(), 3));
+        var first = await _client.Send(token, Events.Todo(EventTypes.Snapshot, Guid.NewGuid(), 3));
+        var next = await _client.Send(token, Events.Todo(EventTypes.Snapshot, Guid.NewGuid(), 1));
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.ResetContent, first.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, next.StatusCode);
         var state = await _client.State(token);
-        Assert.Single(state.Todos);
-        Assert.Equal(0, state.Health.SnapshotsRequested);
+        Assert.Equal(2, state.Todos.Count);
+        Assert.Equal(1, state.Health.SnapshotsRequested);
     }
 
     [Fact]

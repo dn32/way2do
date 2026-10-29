@@ -452,14 +452,16 @@ Ao salvar, o **backend** (não só o frontend) valida, nesta ordem:
 4. **Link do painel**: se a resposta trouxer `dashboardUrl`, ele é gravado **somente se for `http`/`https`** (uma
    URL `javascript:` viraria XSS ao ser clicada). O servidor nunca acessa esse endereço; só o navegador do dono
    da assinatura, por um link com `rel="noopener noreferrer"`.
-5. **Envio inicial**: se o ping recebeu **205**, o servidor enfileira o retrato completo (abaixo). Um consumidor
-   novo responde 205 e recebe tudo; recadastrar uma URL que já tem os dados recebe 200 e não reenvia nada.
+5. **Envio inicial**: toda integração recém-cadastrada recebe o retrato completo (abaixo) **uma vez**, com o ping
+   respondido 200 ou 205. O 200 só diz que o espaço já existe, não que ele tem as tarefas **deste** usuário: outro
+   usuário pode estar usando a mesma URL, ou é um recadastro depois de editar tarefas. O que o consumidor já tiver
+   na mesma versão, ele descarta.
 
 A remoção de uma assinatura cancela as entregas pendentes dela.
 
 ### Retrato completo (205 Reset Content)
-Um único mecanismo cobre o **cadastro** e o **consumidor que reiniciou e perdeu o estado**: o consumidor responde
-205 e o Way2Do enfileira um evento `todo.snapshot` para cada tarefa não excluída do dono da assinatura.
+Um único mecanismo cobre o **cadastro** (sempre) e o **consumidor que reiniciou e perdeu o estado** (quando ele
+responde 205): o Way2Do enfileira um evento `todo.snapshot` para cada tarefa não excluída do dono da assinatura.
 
 Por que isso **não é o consumidor escrevendo de volta na aplicação**:
 - o consumidor não altera nenhuma tarefa nem nenhum dado visível aos usuários, e não faz nenhuma chamada ao
@@ -473,7 +475,9 @@ Condições que mantêm o mecanismo seguro:
 - **no máximo um retrato por assinatura por minuto** (`last_resync_at`). Pedidos dentro do intervalo são agendados
   para o fim dele (`resync_due_at`) e agrupados, não descartados — um consumidor com defeito não consegue gerar
   reenvios em laço. O worker enfileira os retratos vencidos numa transação com `FOR UPDATE SKIP LOCKED`;
-- eventos `todo.snapshot` nunca provocam outro retrato.
+- um evento `todo.snapshot` respondido com 205 (consumidor que reiniciou no meio do retrato e perdeu o que veio
+  antes) pede outro retrato, que respeita o mesmo intervalo de um minuto: o pedido é agendado, não imediato, e por
+  isso não vira laço.
 
 ### Fluxo das alterações
 1. O push de sincronização grava a alteração **e** o evento no outbox na mesma transação. Sem alteração efetiva,
@@ -568,8 +572,8 @@ lendo direto da aplicação, a tela deixaria de provar que a integração funcio
   `https://way2do-consumer.<domínio>`.
 
 Comportamento ao receber:
-- Espaço **vazio** (novo ou perdido num reinício) e evento que não é `todo.snapshot` → aplica o evento e responde
-  **205**, pedindo o retrato completo. Inclui o `webhook.ping` do cadastro.
+- Espaço **vazio** (novo ou perdido num reinício) → aplica o evento e responde **205**, pedindo o retrato
+  completo. Inclui o `webhook.ping` do cadastro e um evento do próprio retrato (reinício no meio dele).
 - Demais casos → deduplica por `eventId`, aplica a regra de versão, registra no log e responde **200**.
 - A resposta ao `webhook.ping` traz `dashboardUrl` = `ViewBaseUrl` + `/v/<SHA-256(T)>` no cabeçalho
   `X-Way2Do-Dashboard-Url` (e no corpo, quando é 200).

@@ -223,8 +223,9 @@ public sealed class WebhookDispatcher(IServiceScopeFactory scopes, WebhookHttp h
             delivery.Status = DeliveryStatus.Delivered;
             delivery.DeliveredAt = now;
             delivery.LastError = null;
-            // 205 pede o retrato completo; um retrato nunca provoca outro (sem laço).
-            if (response.WantsSnapshot && claimed.Type != OutboxWriter.Snapshot
+            // 205 pede o retrato completo, inclusive vindo de um evento do retrato (consumidor que reiniciou no meio
+            // dele). O limite de um retrato por minuto, com pedidos agrupados, impede o laço.
+            if (response.WantsSnapshot
                 && await db.WebhookSubscriptions.SingleOrDefaultAsync(s => s.Id == claimed.SubscriptionId, ct) is { } subscription)
                 RequestResync(subscription, now);
         }

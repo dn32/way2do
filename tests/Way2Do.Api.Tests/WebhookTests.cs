@@ -160,11 +160,14 @@ public sealed class WebhookTests(PostgresFixture postgres) : IAsyncLifetime
     private static Task<HttpResponseMessage> RegisterAsync(Session s, string url) =>
         s.Client.PostAsJsonAsync("/api/integrations", new { url });
 
-    private static async Task<IntegrationResponse> RegisterOkAsync(Session s, string url)
+    // Cadastra e roda uma rodada do worker: o retrato do cadastro já sai (vazio quando o usuário ainda não tem tarefas).
+    private async Task<IntegrationResponse> RegisterOkAsync(Session s, string url)
     {
         var response = await RegisterAsync(s, url);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        return (await response.Content.ReadFromJsonAsync<IntegrationResponse>())!;
+        var created = (await response.Content.ReadFromJsonAsync<IntegrationResponse>())!;
+        await Dispatcher.RunOnceAsync(CancellationToken.None);
+        return created;
     }
 
     private static async Task<string> DetailAsync(HttpResponseMessage response) =>
@@ -427,13 +430,32 @@ public sealed class WebhookTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Cadastro_com_200_tambem_recebe_o_retrato_so_das_tarefas_do_dono()
+    {
+        // O espaço já existe (outro usuário usa a mesma URL, ou é um recadastro): o ping recebe 200.
+        var ana = await NewUserAsync();
+        var bruno = await NewUserAsync();
+        var b1 = await CreateTaskAsync(bruno, "Do bruno 1");
+        var b2 = await CreateTaskAsync(bruno, "Do bruno 2");
+        await CreateTaskAsync(ana, "Da ana");
+        await RegisterOkAsync(ana, _consumer.Url());
+
+        await RegisterOkAsync(bruno, _consumer.Url());
+
+        var snapshot = _consumer.Requests.Where(r => r.EventType == "todo.snapshot")
+            .Select(r => r.Body.GetProperty("todo").GetProperty("id").GetGuid()).ToList();
+        Assert.Equal(3, snapshot.Count); // 1 da ana no cadastro dela, 2 do bruno no dele
+        Assert.Contains(b1, snapshot);
+        Assert.Contains(b2, snapshot);
+    }
+
+    [Fact]
     public async Task Pedidos_de_retrato_no_mesmo_minuto_ficam_agendados_e_agrupados()
     {
         var ana = await NewUserAsync();
         await CreateTaskAsync(ana, "Uma");
         _consumer.Respond = r => (r.EventType == "todo.snapshot" ? 200 : 205, null, TimeSpan.Zero);
-        var created = await RegisterOkAsync(ana, _consumer.Url());
-        await Dispatcher.RunOnceAsync(CancellationToken.None); // retrato do cadastro
+        var created = await RegisterOkAsync(ana, _consumer.Url()); // já entrega o retrato do cadastro
         var first = await SubscriptionAsync(created.Id);
 
         // Duas alterações respondidas com 205 dentro do minuto: um único retrato, agendado para o fim do intervalo.
@@ -448,8 +470,9 @@ public sealed class WebhookTests(PostgresFixture postgres) : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Retrato_respondido_com_205_nao_pede_outro_retrato()
+    public async Task Retrato_respondido_com_205_pede_outro_so_depois_do_intervalo()
     {
+        // Consumidor que reiniciou no meio do retrato: pede de novo, mas o limite de um por minuto impede o laço.
         var ana = await NewUserAsync();
         await CreateTaskAsync(ana, "Uma");
         _consumer.Respond = _ => (205, null, TimeSpan.Zero);
@@ -458,7 +481,8 @@ public sealed class WebhookTests(PostgresFixture postgres) : IAsyncLifetime
         await Dispatcher.RunOnceAsync(CancellationToken.None);
 
         Assert.Single(_consumer.Requests, r => r.EventType == "todo.snapshot");
-        Assert.Null((await SubscriptionAsync(created.Id)).ResyncDueAt);
+        var subscription = await SubscriptionAsync(created.Id);
+        Assert.Equal(subscription.LastResyncAt + WebhookDispatcher.ResyncInterval, subscription.ResyncDueAt);
     }
 
     [Fact]

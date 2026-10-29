@@ -60,8 +60,10 @@ public static class IngestEndpoints
         if (created)
             log.LogInformation("Espaço {Space} criado.", SpaceKeys.Short(spaceId));
 
-        // Espaço vazio (novo, ou perdido num reinício): pede o retrato completo. O próprio retrato nunca pede outro.
-        var snapshotRequested = created && evt!.Type != EventTypes.Snapshot;
+        // Espaço vazio (novo, ou perdido num reinício): pede o retrato completo. Vale também quando o primeiro evento
+        // é do retrato (reinício no meio dele: o que veio antes se perdeu). O Way2Do faz no máximo um retrato por
+        // minuto por integração, então isso não vira laço.
+        var snapshotRequested = created;
         space.Apply(evt!, time.GetUtcNow(), snapshotRequested);
         var status = snapshotRequested ? StatusCodes.Status205ResetContent : StatusCodes.Status200OK;
 

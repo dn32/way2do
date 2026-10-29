@@ -92,9 +92,10 @@ public static class IntegrationEndpoints
             DashboardUrl = WebhookUrl.SafeDashboardUrl(ping.DashboardUrlHeader) ?? ReadDashboardUrl(ping.Body),
             CreatedAt = now,
         };
-        // 5) 205: consumidor novo, que recebe o retrato completo.
-        if (ping.WantsSnapshot)
-            WebhookDispatcher.RequestResync(subscription, now);
+        // 5) Retrato completo para toda integração recém-cadastrada, com 200 ou 205: o 200 só diz que o espaço já
+        // existe, não que ele tem as tarefas DESTE usuário (outro usuário na mesma URL, ou recadastro depois de
+        // editar). O que o consumidor já tiver na mesma versão, ele descarta.
+        WebhookDispatcher.RequestResync(subscription, now);
 
         db.WebhookSubscriptions.Add(subscription);
         try
@@ -105,8 +106,7 @@ public static class IntegrationEndpoints
         {
             return Refused("esta URL já está cadastrada", StatusCodes.Status409Conflict); // cadastro simultâneo
         }
-        if (ping.WantsSnapshot)
-            signal.Notify();
+        signal.Notify();
 
         logger.LogInformation("Integração {Url} cadastrada.", WebhookUrl.Mask(url));
         return Results.Created($"/api/integrations/{subscription.Id}", IntegrationResponse.From(subscription));

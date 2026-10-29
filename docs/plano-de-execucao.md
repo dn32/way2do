@@ -298,11 +298,15 @@ subseções abaixo.
   duplicados descartados), fora do ar e recuperação, reinício do consumidor com 205 repondo tudo, tela offline no
   celular. Revisão de código: 10 achados; 8 corrigidos (entre eles: assinatura removida no meio do envio continuava
   recebendo o resto do lote; um consumidor lento segurava a rodada de todos, e agora cada assinatura envia por conta
-  própria; conexão que cai no meio da resposta escapava do tratamento), com checagem de mutação; 2 mudam regras do
-  retrato completo e foram levados ao Marcelo. Revisão de segurança: nenhum achado (SSRF por formas de IP, IPv6 e
+  própria; conexão que cai no meio da resposta escapava do tratamento), com checagem de mutação; 2 mudavam regras do
+  retrato completo e foram decididos pelo Marcelo depois dos dois commits: todo cadastro novo recebe o retrato
+  (antes só com 205, e outro usuário na mesma URL ou um recadastro ficavam incompletos) e um evento do retrato
+  respondido com 205 pede outro, agendado pelo intervalo de um minuto (consumidor que reinicia no meio do retrato).
+  Revisão de segurança: nenhum achado (SSRF por formas de IP, IPv6 e
   DNS rebinding; vazamento entre usuários; token da URL em respostas, logs e Referer; XSS no painel e no link;
-  CSRF; SQL). Testes: 218 na API, 80 no consumidor, 148 no frontend.
-- **Commits**: `feat(integracao): assinaturas, outbox e webhooks` e `feat(consumidor): consumidor simulado com painel`.
+  CSRF; SQL). Testes: 219 na API, 80 no consumidor, 148 no frontend.
+- **Commits**: `feat(integracao): assinaturas, outbox e webhooks` (`a7b50dc`), `feat(consumidor): consumidor simulado
+  com painel` (`f344fe7`) e `fix(integracao): retrato completo em todo cadastro novo`.
 
 ### Etapa 8 — Docker, Compose e VPS
 - **Entregas**: Dockerfiles (sem root), `docker-compose.yml` (portas em `127.0.0.1`, healthchecks, variáveis
@@ -379,7 +383,7 @@ Preenchido ao fim de cada etapa; vira a seção "Uso de inteligência artificial
 | 4 | implementação de push e pull; testes de integração e de concorrência; checagem de mutação; revisão de marco das etapas 2 a 4 com correção dos 10 achados | liberação da etapa ("próxima"); revisão e COMMIT pendentes |
 | 5 | implementação do frontend a partir do design aprovado; domínio em TS com paridade testada; verificação no navegador; revisões de código e de segurança com correção de todos os achados; checagem de mutação | liberação da etapa ("próxima"); validação do visual; COMMIT |
 | 6 | motor de sincronização e PWA; testes com servidor em memória; verificação offline no navegador com dois perfis; revisão de marco (código e segurança) com correção dos achados; checagem de mutação | liberação da etapa ("continue"); COMMIT pendente |
-| 7 | API de integrações e worker; tela de Integrações; subagente em worktree para o consumidor (a partir do contrato), revisado e integrado pela sessão principal; verificação ponta a ponta no navegador | liberação da etapa ("continue"); COMMIT pendente |
+| 7 | API de integrações e worker; tela de Integrações; subagente em worktree para o consumidor (a partir do contrato), revisado e integrado pela sessão principal; verificação ponta a ponta no navegador; revisões com correção dos achados | liberação da etapa ("continue"); decisão sobre o retrato completo (manter várias pessoas na mesma URL e mandar o retrato em todo cadastro); COMMIT |
 | 8 | | |
 | 9 | | |
 | 10 | | |
