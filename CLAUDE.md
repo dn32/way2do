@@ -73,6 +73,7 @@ set -a && . ./.env && set +a && cd src/Way2Do.Api && dotnet run
 cd src/web && npm install && npm run dev
 cd src/web && npm test                      # Vitest: domínio (casos compartilhados), banco local, formulário
 cd src/web && npm run build                 # TypeScript estrito + build de produção
+cd src/web && npm run preview               # serve o build (com Service Worker) em 5300: teste de abrir offline
 
 # Migrations (ferramenta local; restaurar uma vez com `dotnet tool restore`)
 dotnet ef migrations add <Nome> --project src/Way2Do.Api --output-dir Data/Migrations

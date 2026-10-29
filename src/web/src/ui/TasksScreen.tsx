@@ -1,15 +1,19 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { User } from '../api/auth'
 import { sortWithUrgency } from '../domain/ordering'
 import type { Task } from '../domain/types'
 import { userDb } from '../data/db'
 import { newTaskId, saveLocalEdit, type LocalEdit } from '../data/localTasks'
+import { startSync } from '../sync/engine'
+import { indicatorKind, useBrowserOnline } from '../sync/indicator'
+import { clearRejections, readCursor, readRejections, readStatus, type Rejection } from '../sync/store'
 import { activeFilterCount, filterTasks, NO_FILTERS, tagCounts, type Filters } from './filters'
 import { PriorityField, SearchField, StatusField, TagField } from './FiltersControls'
-import { CheckIcon, ClipboardIcon, ClockIcon, CloseIcon, FilterIcon, InfoIcon, LogOutIcon, MenuIcon, PlusIcon, TagIcon, TrashIcon } from './icons'
+import { AlertIcon, CheckIcon, ClipboardIcon, CloseIcon, FilterIcon, InfoIcon, LogOutIcon, MenuIcon, PlusIcon, TagIcon, TrashIcon } from './icons'
 import { Overlay } from './Overlay'
 import { TaskForm } from './TaskForm'
+import { SyncBar } from './SyncBar'
 import { TaskItem } from './TaskItem'
 import { useIsDesktop } from './useMediaQuery'
 
@@ -22,11 +26,20 @@ type Panel =
   | { kind: 'menu' }
   | { kind: 'logout'; pending: number }
 
-export function TasksScreen({ user, onLogout }: { user: User; onLogout: () => Promise<void> }) {
+export function TasksScreen({ user, onLogout, onSessionExpired }: { user: User; onLogout: () => Promise<void>; onSessionExpired: () => Promise<void> }) {
   const desktop = useIsDesktop()
   const db = userDb(user.id)
   const stored = useLiveQuery(() => db.tasks.toArray(), [db])
   const pendingOps = useLiveQuery(() => db.pendingOps.count(), [db]) ?? 0
+  const sync = useLiveQuery(async () => ({ status: await readStatus(db), cursor: await readCursor(db), rejections: await readRejections(db) }), [db])
+  const browserOnline = useBrowserOnline()
+
+  // Motor de sincronização deste usuário: para quando a tela fecha (logout, troca de usuário em outra aba).
+  useEffect(() => {
+    const stop = new AbortController()
+    startSync(user.id, db, stop.signal)
+    return () => stop.abort()
+  }, [user.id, db])
   const [filters, setFilters] = useState<Filters>(NO_FILTERS)
   const [panel, setPanel] = useState<Panel>({ kind: 'none' })
   const [failure, setFailure] = useState<string | null>(null)
@@ -60,7 +73,12 @@ export function TasksScreen({ user, onLogout }: { user: User; onLogout: () => Pr
   }
   const askLogout = () => (pendingOps > 0 ? setPanel({ kind: 'logout', pending: pendingOps }) : onLogout())
 
-  if (stored === undefined) return null // primeira leitura do IndexedDB (instantânea na prática)
+  if (stored === undefined || sync === undefined) return null // primeira leitura do IndexedDB (instantânea na prática)
+
+  const indicator = indicatorKind(sync.status, pendingOps, browserOnline)
+  // Primeira sincronização neste aparelho: a lista espera o pull completo, a menos que ele já tenha falhado.
+  const firstSync = sync.cursor === undefined && (indicator === 'syncing' || indicator === 'ok' || indicator === 'pending')
+  const syncBar = (desk: boolean) => <SyncBar kind={indicator} pending={pendingOps} desktop={desk} onReLogin={() => void onSessionExpired()} />
 
   const list = (
     <>
@@ -71,7 +89,14 @@ export function TasksScreen({ user, onLogout }: { user: User; onLogout: () => Pr
           <button className="iconbtn" type="button" aria-label="Fechar aviso" onClick={() => setFailure(null)}><CloseIcon /></button>
         </div>
       )}
-      {alive.length === 0 ? (
+      {sync.rejections.length > 0 && <RejectedNotice rejections={sync.rejections} onClose={() => void clearRejections(db)} />}
+      {firstSync && alive.length === 0 ? (
+        <div className="empty" role="status">
+          <span className="empty__icon"><ClipboardIcon /></span>
+          <p className="empty__title">Carregando suas tarefas…</p>
+          <p>Na primeira vez neste aparelho, as tarefas vêm do servidor. Depois funcionam mesmo sem internet.</p>
+        </div>
+      ) : alive.length === 0 ? (
         <EmptyState onCreate={() => setPanel({ kind: 'form', taskId: null })} />
       ) : visible.length === 0 ? (
         <div className="empty">
@@ -93,7 +118,7 @@ export function TasksScreen({ user, onLogout }: { user: User; onLogout: () => Pr
     <div className="w2">
       {desktop ? (
         <div className="desk">
-          <SyncBar pendingOps={pendingOps} desktop />
+          {syncBar(true)}
           <header className="d-header">
             <div className="brand">
               <span className="brand__mark"><CheckIcon /></span>
@@ -132,7 +157,7 @@ export function TasksScreen({ user, onLogout }: { user: User; onLogout: () => Pr
       ) : (
         <div className="m-app">
           <div className="m-top">
-            <SyncBar pendingOps={pendingOps} desktop={false} />
+            {syncBar(false)}
             <header className="appbar">
               <div className="appbar__title">
                 <h1 className="brand brand--title">Minhas tarefas</h1>
@@ -288,13 +313,29 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
   )
 }
 
-/** Nesta etapa só mostra o que está na fila; os demais estados chegam com o motor de sincronização. */
-function SyncBar({ pendingOps, desktop }: { pendingOps: number; desktop: boolean }) {
-  if (pendingOps === 0) return null
+/** Alterações recusadas pelo servidor: a tarefa voltou para a versão dele (escopo, seção 5). */
+function RejectedNotice({ rejections, onClose }: { rejections: Rejection[]; onClose: () => void }) {
+  const shown = rejections.slice(-3)
+  const restored = rejections.filter((r) => !r.discarded).length
+  const footer = restored === 0 ? null
+    : restored < rejections.length ? 'As outras voltaram para a versão salva no servidor.'
+    : restored === 1 ? 'A tarefa voltou para a versão salva no servidor.'
+    : 'As tarefas voltaram para a versão salva no servidor.'
   return (
-    <div className={desktop ? 'sync sync--pending sync--desk' : 'sync sync--pending'} role="status">
-      <ClockIcon />
-      <span className="sync__text">Pendente ({pendingOps})</span>
+    <div className="notice notice--warn" role="alert">
+      <AlertIcon />
+      <div className="notice__text">
+        <div className="notice__title">
+          {rejections.length === 1 ? 'Uma alteração foi recusada pelo servidor' : `${rejections.length} alterações foram recusadas pelo servidor`}
+        </div>
+        <ul className="rejections">
+          {shown.map((r) => (
+            <li key={r.opId}><strong>{r.title}</strong>: {r.reason}{r.discarded && '. Descartada deste aparelho: o servidor não a aceitou.'}</li>
+          ))}
+        </ul>
+        {footer}
+      </div>
+      <button className="iconbtn" type="button" aria-label="Fechar aviso" onClick={onClose}><CloseIcon /></button>
     </div>
   )
 }

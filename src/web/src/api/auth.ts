@@ -1,3 +1,5 @@
+import { UUID_PATTERN } from '../data/ids'
+
 export interface User {
   id: string
   name: string
@@ -8,7 +10,6 @@ export class OfflineError extends Error {}
 
 export class InvalidCredentialsError extends Error {}
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const TIMEOUT_MS = 8000
 
 export async function login(userName: string, password: string): Promise<User> {
@@ -50,7 +51,7 @@ export async function logout(): Promise<boolean> {
 // O id vira o nome do banco local do usuário: só aceita um UUID de verdade.
 function parseUser(body: unknown): User {
   const { id, name } = (body ?? {}) as Partial<User>
-  if (typeof id !== 'string' || !UUID.test(id) || typeof name !== 'string')
+  if (typeof id !== 'string' || !UUID_PATTERN.test(id) || typeof name !== 'string')
     throw new Error('Resposta inesperada do servidor ao entrar.')
   return { id: id.toLowerCase(), name }
 }

@@ -402,6 +402,20 @@ public sealed class SyncTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task Operacao_malformada_sobre_tarefa_propria_e_recusada_com_o_estado_do_servidor()
+    {
+        var ana = await AnaAsync();
+        var id = Guid.NewGuid();
+        await PushAsync(ana, Create(id, "Existe no servidor", T1));
+
+        var response = await PostRawAsync(ana, new JsonArray(Op(id, new JsonObject { ["fields"] = new JsonObject { ["title"] = null } })));
+        var result = Assert.Single((await response.Content.ReadFromJsonAsync<PushResponse>())!.Results);
+
+        Assert.Equal(PushResult.Rejected, result.Status);
+        Assert.Equal("Existe no servidor", result.Task?.Title);
+    }
+
+    [Fact]
     public async Task Operacao_malformada_citando_tarefa_de_outro_usuario_nao_vaza_o_estado_dela()
     {
         var ana = await AnaAsync();
@@ -511,6 +525,39 @@ public sealed class SyncTests(PostgresFixture postgres)
 
         Assert.Equal(HttpStatusCode.Unauthorized, push.StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, pull.StatusCode);
+    }
+
+    [Fact]
+    public async Task Cabecalho_com_outro_usuario_recusa_push_e_pull_sem_gravar()
+    {
+        var ana = await AnaAsync();
+        var bruno = await BrunoAsync();
+        var id = Guid.NewGuid();
+
+        // Fila de ana enviada com o cookie de bruno (outra aba trocou de usuário no meio do ciclo).
+        bruno.Client.DefaultRequestHeaders.Add(SyncEndpoints.ExpectedUserHeader, ana.UserId.ToString());
+        var push = await bruno.Client.PostAsJsonAsync("/api/sync/push", new { operations = new[] { Create(id, "da ana", T1) } });
+        var pull = await bruno.Client.GetAsync("/api/sync/pull");
+
+        Assert.Equal(HttpStatusCode.Conflict, push.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, pull.StatusCode);
+        Assert.False(await WithDbAsync(db => db.Tasks.AnyAsync(t => t.Id == id)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Cabecalho_com_o_proprio_usuario_e_aceito_em_qualquer_caixa(bool upper)
+    {
+        var ana = await AnaAsync();
+        var header = ana.UserId.ToString();
+        ana.Client.DefaultRequestHeaders.Add(SyncEndpoints.ExpectedUserHeader, upper ? header.ToUpperInvariant() : header);
+
+        var result = await PushAsync(ana, Create(Guid.NewGuid(), "minha", T1));
+        var pull = await ana.Client.GetAsync("/api/sync/pull");
+
+        Assert.Equal(PushResult.Accepted, Assert.Single(result.Results).Status);
+        Assert.Equal(HttpStatusCode.OK, pull.StatusCode);
     }
 
     // ---------- concorrência ----------

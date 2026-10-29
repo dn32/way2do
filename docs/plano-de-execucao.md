@@ -123,8 +123,8 @@ subseções abaixo.
 | 2 | Base do backend | implementa API, banco, seed e autenticação, com testes | preenche o `.env`; revisão; COMMIT | ✅ `0731b89` |
 | 3 | Domínio e casos compartilhados | implementa merge, regra urgente e ordenação, guiado pelos casos | valida a tabela de casos da regra urgente; revisão; COMMIT | ✅ `e710508` |
 | 4 | Sincronização no servidor | implementa push e pull com testes de integração; revisão de marco | revisão; COMMIT | ✅ `2ee7b8d` |
-| 5 | Frontend base | implementa as telas e o banco local; confere no navegador | valida o visual; revisão; COMMIT | ⏳ implementada, testada e revisada; aguardando validação do visual e COMMIT |
-| 6 | Motor de sincronização e PWA | implementa fila, sync, indicador e Service Worker; testa offline; revisão de marco | revisão; COMMIT | ⬜ |
+| 5 | Frontend base | implementa as telas e o banco local; confere no navegador | valida o visual; revisão; COMMIT | ✅ `ff6818e` |
+| 6 | Motor de sincronização e PWA | implementa fila, sync, indicador e Service Worker; testa offline; revisão de marco | revisão; COMMIT | ⏳ implementada, testada e revisada; aguardando COMMIT |
 | 7 | Integração externa e consumidor simulado | implementa a API de integrações e o worker; subagente faz o consumidor | revisão; COMMIT | ⬜ |
 | 8 | Docker, Compose e VPS | escreve Dockerfiles e Compose; cria o túnel; revisão de marco | informa o domínio; autoriza o túnel; opera a VPS; revisão; COMMIT | ⬜ |
 | 9 | Aceitação ponta a ponta (skill `roteiro-demo`) | cria a skill; executa no navegador e no celular; corrige | disponibiliza o Android; revisão; COMMIT | ⬜ |
@@ -262,6 +262,17 @@ subseções abaixo.
 - **Revisão de marco**: `code-review` + `security-review` sobre as etapas 5–6; achados corrigidos.
 - **Pronto quando**: criar/editar/concluir/excluir offline, recarregar a página offline, voltar online e ver tudo
   no servidor; conflito entre dois perfis resolvido por campo.
+- **Como foi**: motor em `src/web/src/sync` (ciclo, gatilhos, backoff, Web Locks) testado contra um servidor em
+  memória com o mesmo merge; no navegador, com o build de produção e o modo offline do Playwright: criar, concluir
+  e excluir offline, **recarregar a página sem rede** (o app abre pelo Service Worker), voltar online e ver tudo no
+  servidor; conflito entre dois perfis resolvido por campo (um concluiu, o outro renomeou: os dois ficaram
+  concluídos e com o título novo); erro 503 simulado, sessão expirada com "Entrar de novo", recusa de operação
+  adulterada, duas abas (só uma com o lock) e aviso de nova versão. Do backend veio um cabeçalho de conferência do
+  usuário (observação de segurança deixada pela etapa 5). Revisão de código: 10 achados, 8 corrigidos no código (o
+  principal: recusa de operação malformada voltava sem o estado do servidor e o aparelho apagaria a tarefa; também
+  `AbortSignal.any`, que não existe no iOS anterior a 17.4) e 2 de documentação, resolvidos aqui. Revisão de
+  segurança: nenhum achado. Checagem de mutação nas 6 correções principais. `npm audit` aponta 4 avisos de
+  severidade baixa no `deepmerge`, usado só no build do Service Worker (não vai para o navegador).
 - **Commits**: `feat(web): sincronização offline e PWA`.
 
 ### Etapa 7 — Integração externa e consumidor simulado
@@ -350,8 +361,8 @@ Preenchido ao fim de cada etapa; vira a seção "Uso de inteligência artificial
 | 2 | implementação da solução .NET, do modelo de dados e da autenticação; 16 testes de integração com Postgres real; os testes pegaram uma falha de segurança (token aceito também no cabeçalho `Authorization`) e ela foi corrigida; execução real verificada com `curl`; dependência desnecessária removida (`Identity.Core`, já no framework) | liberação com DESENVOLVA; padrões de segurança definidos na etapa 0 (cookie, credenciais fora do repositório); revisão e COMMIT pendentes |
 | 3 | implementação do domínio guiada pelos casos; escrita dos casos de borda; checagem de mutação para provar que os testes detectam quebras | liberação da etapa; regra urgente com negação definida por ele na etapa 0; validação da tabela de casos e COMMIT pendentes |
 | 4 | implementação de push e pull; testes de integração e de concorrência; checagem de mutação; revisão de marco das etapas 2 a 4 com correção dos 10 achados | liberação da etapa ("próxima"); revisão e COMMIT pendentes |
-| 5 | implementação do frontend a partir do design aprovado; domínio em TS com paridade testada; verificação no navegador; revisões de código e de segurança com correção de todos os achados; checagem de mutação | liberação da etapa ("próxima"); validação do visual e COMMIT pendentes |
-| 6 | | |
+| 5 | implementação do frontend a partir do design aprovado; domínio em TS com paridade testada; verificação no navegador; revisões de código e de segurança com correção de todos os achados; checagem de mutação | liberação da etapa ("próxima"); validação do visual; COMMIT |
+| 6 | motor de sincronização e PWA; testes com servidor em memória; verificação offline no navegador com dois perfis; revisão de marco (código e segurança) com correção dos achados; checagem de mutação | liberação da etapa ("continue"); COMMIT pendente |
 | 7 | | |
 | 8 | | |
 | 9 | | |

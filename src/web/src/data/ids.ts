@@ -1,3 +1,6 @@
+/** UUID em texto (qualquer versão), como os ids que vêm do servidor. */
+export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 /**
  * UUID v4 gerado no aparelho. `crypto.randomUUID` só existe em contexto seguro (HTTPS ou localhost); fora dele
  * (ex.: celular abrindo pelo IP da rede local) usa `crypto.getRandomValues`, que existe em qualquer contexto.

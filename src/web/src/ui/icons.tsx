@@ -124,3 +124,33 @@ export function PriorityBars({ level }: { level: 1 | 2 | 3 }) {
     </svg>
   )
 }
+
+// Indicador de sincronização (docs/marca.html, "Indicador de sincronização").
+export const WifiOffIcon = () => (
+  <Icon>
+    <line x1="2" y1="2" x2="22" y2="22" />
+    <path d="M8.5 16.5a5 5 0 0 1 7 0M2 8.8a15 15 0 0 1 4.2-2.6M10.7 5.1A15 15 0 0 1 22 8.8M5 12.9a10 10 0 0 1 5.2-2.8M19 12.9a10 10 0 0 0-2-1.5M12 20h.01" />
+  </Icon>
+)
+
+export const RefreshIcon = () => (
+  <Icon>
+    <polyline points="23 4 23 10 17 10" />
+    <path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10" />
+  </Icon>
+)
+
+export const ErrorIcon = () => (
+  <Icon>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </Icon>
+)
+
+export const LockIcon = () => (
+  <Icon>
+    <rect x="3" y="11" width="18" height="11" rx="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </Icon>
+)

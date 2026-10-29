@@ -195,3 +195,26 @@ body,
     padding: 32px;
   }
 }
+
+/* ---------- avisos da sincronização ---------- */
+.rejections {
+  margin: 4px 0 6px;
+  padding-left: 18px;
+}
+/* "Nova versão disponível": acima da barra inferior do celular, no canto no desktop */
+.update-toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  z-index: 60;
+  border-radius: 12px;
+}
+@media (min-width: 900px) {
+  .update-toast {
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    width: 360px;
+  }
+}

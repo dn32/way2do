@@ -8,6 +8,13 @@ public static class SyncEndpoints
     /// <summary>Corpo máximo do push (até 500 operações). O Kestrel aplica o mesmo limite a toda a API.</summary>
     public const long MaxPushBodyBytes = 1024 * 1024;
 
+    /// <summary>
+    /// Id do usuário dono do banco local que o aparelho está sincronizando. Opcional; quando vem e não é o usuário
+    /// do cookie (ex.: outra aba trocou de usuário no meio de um ciclo), a requisição é recusada com 409 para que a
+    /// fila de um usuário nunca seja gravada na conta de outro.
+    /// </summary>
+    public const string ExpectedUserHeader = "X-Way2Do-User";
+
     public static void MapSyncEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/sync").RequireAuthorization();
@@ -40,10 +47,12 @@ public static class SyncEndpoints
 
         if (principal.GetUser() is not { } user)
             return Results.Unauthorized();
+        if (OtherUser(http, user.Id) is { } conflict)
+            return conflict;
         return Results.Ok(await sync.PushAsync(user.Id, user.Name, operations, ct));
     }
 
-    private static async Task<IResult> Pull(ClaimsPrincipal principal, SyncService sync, CancellationToken ct,
+    private static async Task<IResult> Pull(HttpRequest http, ClaimsPrincipal principal, SyncService sync, CancellationToken ct,
         long since = 0, int limit = SyncService.DefaultPullLimit)
     {
         if (since < 0 || limit < 1 || limit > SyncService.MaxPullLimit)
@@ -53,6 +62,17 @@ public static class SyncEndpoints
 
         if (principal.GetUser() is not { } user)
             return Results.Unauthorized();
+        if (OtherUser(http, user.Id) is { } conflict)
+            return conflict;
         return Results.Ok(await sync.PullAsync(user.Id, since, limit, ct));
+    }
+
+    private static IResult? OtherUser(HttpRequest http, Guid userId)
+    {
+        if (!http.Headers.TryGetValue(ExpectedUserHeader, out var expected))
+            return null;
+        return Guid.TryParse(expected.ToString(), out var id) && id == userId
+            ? null
+            : Results.Problem(title: "A sessão é de outro usuário.", statusCode: StatusCodes.Status409Conflict);
     }
 }

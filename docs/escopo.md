@@ -263,7 +263,9 @@ a ordem nunca "pisque" entre renderizações. O mesmo critério vale para as nã
 ### Banco local (Dexie), um por usuário (`way2do-<userId>`)
 - `tasks` — estado local das tarefas (inclui `fieldTimestamps` e `deletedAt`).
 - `pendingOps` — fila: `{ opId, taskId, changes: { campo: { value, ts } }, tags: { tag: { present, ts } }, deleted?, createdAt }`.
-- `meta` — cursor do último pull, `clientId`, dados do usuário logado.
+- `meta` — cursor do último pull, estado do último ciclo (o indicador de todas as abas lê daqui, porque só uma
+  sincroniza) e as recusas ainda não dispensadas pelo usuário. O usuário logado fica em outro banco
+  (`way2do-session`), que não pertence a nenhum usuário.
 
 Separar por usuário evita que dois usuários no mesmo aparelho vejam os dados um do outro.
 
@@ -276,9 +278,15 @@ Separar por usuário evita que dois usuários no mesmo aparelho vejam os dados u
    de modo que uma edição feita durante o ciclo não é sobrescrita.
 4. Atualiza o cursor.
 
-Gatilhos: abertura do app, evento `online`, alguns segundos após cada alteração local (com debounce), retorno do
-app ao primeiro plano (`visibilitychange`) e periodicamente (~30 s) enquanto online, para trazer alterações feitas
-em outros aparelhos. Em falha de rede, novas tentativas com *backoff* exponencial.
+Gatilhos: abertura do app, evento `online`, 2 s após cada alteração local (debounce), retorno do app ao primeiro
+plano (`visibilitychange`) e a cada 30 s enquanto online, para trazer alterações feitas em outros aparelhos. Em
+falha (rede ou servidor), novas tentativas com *backoff* exponencial com jitter, de 2 s até 1 min; o evento
+`online` zera a espera. A alteração local é percebida pela posição da última operação da fila, que só cresce (a
+contagem não serve: o envio de um lote pode tirar da fila mais do que entrou).
+
+Antes de cada ciclo, o motor confere que o banco aberto é do usuário da sessão, e cada requisição leva o
+cabeçalho `X-Way2Do-User` com esse id: se outra aba trocou de conta no meio do ciclo, o servidor responde 409 e
+nada é gravado na conta errada.
 
 `navigator.onLine` só serve de dica: o estado "offline" é confirmado pela falha real das requisições.
 
@@ -297,6 +305,12 @@ pelo `useLiveQuery`. O cursor só avança (grava-se o maior entre o atual e o re
   recusada, a resposta inclui o **estado atual da tarefa no servidor**; o cliente remove a operação da fila,
   **substitui** a cópia local por esse estado (sem merge, para não manter o valor inválido) e avisa o usuário.
   Sem isso, uma operação inválida ficaria na fila para sempre, travando a sincronização das demais.
+- Edições feitas depois do envio (ainda na fila) são reaplicadas sobre o estado do servidor. Se o servidor não tem
+  a tarefa (`task: null`, ex.: criação recusada), ela é apagada do aparelho com o que restava dela na fila, e o
+  aviso diz que foi descartada.
+- Quando a soma das duas cópias quebra um limite no pull (ex.: tags adicionadas em dois aparelhos passam de 20),
+  vale o estado do servidor com as edições da fila por cima; a que estoura o limite é recusada no envio, com
+  aviso. O pull nunca trava por isso.
 
 ### Indicador de estado (UI)
 | Estado | Quando |
@@ -306,7 +320,11 @@ pelo `useLiveQuery`. O cursor só avança (grava-se o maior entre o atual e o re
 | **Sincronizado** | fila vazia e último ciclo bem-sucedido |
 | **Pendente** | online, com alterações na fila aguardando o próximo ciclo |
 | **Erro** | o servidor respondeu com erro (5xx); nova tentativa com backoff. Diferente de "Offline": há rede, o problema é do servidor |
-| **Sessão expirada** | servidor respondeu 401; os dados locais são preservados até novo login |
+| **Sessão expirada** | servidor respondeu 401 (ou 409: o cookie é de outro usuário); a sincronização pausa, os dados locais são preservados e "Entrar de novo" leva ao login sem apagar nada |
+
+"Sincronizando" só aparece quando há o que enviar ou na primeira sincronização: o pull periódico silencioso não
+pisca o indicador a cada 30 s. Na primeira sincronização de um aparelho, a lista mostra "Carregando suas
+tarefas…" até o pull completo terminar (ou falhar; aí a lista abre com o que houver e o indicador explica).
 
 ### Conflitos — *last-write-wins* por campo
 Cada campo da tarefa carrega o timestamp da sua última alteração (`fieldTimestamps`). No merge (servidor e
@@ -593,6 +611,9 @@ Sem design sofisticado (fora de escopo pelo enunciado): o foco é clareza e uso 
 | `DELETE` | `/api/integrations/{id}` | remove a assinatura e cancela as entregas pendentes dela |
 | `GET` | `/health` | health check |
 
+Push e pull aceitam o cabeçalho opcional `X-Way2Do-User` com o id do dono do banco local; se ele não for o usuário
+do cookie, a resposta é **409** e nada é lido nem gravado (seção 5). O cliente trata o 409 como "Sessão expirada".
+
 Contrato do push (corpo JSON):
 
 ```json
@@ -611,8 +632,9 @@ Contrato do push (corpo JSON):
 ```
 
 Resposta: `{ "results": [ { "opId", "taskId", "status": "accepted" | "rejected", "field", "reason", "task" } ] }`.
-Em uma recusa, `task` traz o estado atual da tarefa no servidor (ou `null` se o servidor não a tem: o aparelho
-remove a cópia local). O pull devolve `{ "tasks": [...], "cursor", "hasMore" }`, cada tarefa com `tags` (incluindo
+Em uma recusa, `task` traz o estado atual da tarefa no servidor ao fim do lote (ou `null` se o servidor não a
+tem: o aparelho remove a cópia local). Vale também para operação malformada que cita uma tarefa do próprio
+usuário; tarefa de outro usuário nunca vem na resposta. O pull devolve `{ "tasks": [...], "cursor", "hasMore" }`, cada tarefa com `tags` (incluindo
 as removidas), `fieldTimestamps`, `version` e `changeSeq`.
 
 A escrita de tarefas passa **só pelo push**: existe um único caminho de escrita e, portanto, um único lugar onde o

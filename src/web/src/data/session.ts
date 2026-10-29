@@ -1,13 +1,17 @@
 import { logout as logoutRequest, type User } from '../api/auth'
-import { sessionDb } from './db'
+import { sessionDb, userDb } from './db'
 
 export async function currentSession(): Promise<User | null> {
   const session = await sessionDb.session.get('current')
   return session ? { id: session.userId, name: session.name } : null
 }
 
-/** Login bem-sucedido: o servidor já trocou o cookie, então um logout pendente de antes não deve mais ser enviado. */
+/**
+ * Login bem-sucedido: o servidor já trocou o cookie, então um logout pendente de antes não deve mais ser enviado, e
+ * o estado "Sessão expirada" gravado no banco do usuário deixa de valer (o próximo ciclo grava o atual).
+ */
 export async function startSession(user: User): Promise<void> {
+  await userDb(user.id).meta.delete('syncStatus')
   await sessionDb.transaction('rw', sessionDb.session, sessionDb.flags, async () => {
     await sessionDb.session.put({ key: 'current', userId: user.id, name: user.name })
     await sessionDb.flags.delete('pendingLogout')
@@ -35,4 +39,12 @@ export async function retryPendingLogout(): Promise<void> {
     return
   }
   if (await logoutRequest()) await sessionDb.flags.delete('pendingLogout')
+}
+
+/**
+ * Sessão expirada (o servidor respondeu 401): volta para o login sem pedir logout, porque o cookie já não vale. O
+ * banco local do usuário fica intacto e a fila é enviada depois do novo login.
+ */
+export async function expireSession(): Promise<void> {
+  await sessionDb.session.delete('current')
 }

@@ -52,7 +52,13 @@ public sealed class SyncService(AppDbContext db, TimeProvider clock)
         var now = clock.GetUtcNow(); // depois do lock: o horário acompanha a ordem de commit
 
         var parsed = operations.Select(PushOperationReader.Read).ToList();
-        var ids = parsed.Where(p => p.Error is null).Select(p => p.Operation!.TaskId).Distinct().ToList();
+        // Inclui as tarefas citadas por operações malformadas: a recusa delas também traz o estado do servidor (senão
+        // o aparelho entenderia "o servidor não tem a tarefa" e a apagaria).
+        var ids = parsed
+            .Select((p, i) => p.Operation?.TaskId ?? PushOperationReader.IdOrEmpty(operations[i], "taskId"))
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
         var tasks = await db.Tasks.Where(t => ids.Contains(t.Id)).ToDictionaryAsync(t => t.Id, ct);
 
         var outcomes = new List<Outcome>(operations.Count);
