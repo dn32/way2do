@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!-- Tokens e componentes da marca: fonte única em docs/design, embutida no assembly (não copiada) e servida em
+       /way2do.css. Embutir funciona igual no dotnet run, nos testes e na imagem publicada. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\docs\design\way2do.css" LogicalName="Way2Do.Consumer.way2do.css" />
+  </ItemGroup>
+
+</Project>

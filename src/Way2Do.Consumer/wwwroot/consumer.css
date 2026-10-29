@@ -1,0 +1,55 @@
+/* Layout do consumidor simulado. Componentes e tokens vêm de /way2do.css (docs/design); aqui só variáveis --w2-*. */
+
+/* O atributo hidden vence as classes de componente que definem display (.notice, .error-msg…). */
+[hidden]{display:none !important}
+
+.c-page{max-width:1200px;margin:0 auto;padding:24px 16px 48px;display:flex;flex-direction:column;gap:16px}
+.c-page--narrow{max-width:760px}
+.c-stack{display:flex;flex-direction:column;gap:16px}
+.c-text{color:var(--w2-text-2);max-width:72ch}
+.c-home{text-decoration:none}
+.d-header .c-status{margin:0 0 0 auto;font-size:14px;font-weight:600;color:var(--w2-muted)}
+.d-header .c-status--error{color:var(--w2-danger-text)}
+.c-mono{font-family:var(--w2-mono);font-size:14px}
+.c-break{word-break:break-all}
+.c-muted{color:var(--w2-muted)}
+.c-nowrap{white-space:nowrap}
+.c-num,.c-table .c-num{font-variant-numeric:tabular-nums;text-align:right}
+.c-subtitle{font-size:15px;font-weight:800;margin:0 0 6px;color:var(--w2-text)}
+
+.c-copy{display:flex;gap:8px;flex-wrap:wrap}
+.c-copy .input{flex:1 1 280px;min-width:0}
+
+/* Blocos do painel: lado a lado no desktop, empilhados no celular. */
+.c-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start}
+.c-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px}
+
+.c-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.c-stat{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--w2-border);border-radius:10px;background:var(--w2-surface-2)}
+.c-stat__n{font-size:26px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--w2-text)}
+.c-stat__l{font-size:13px;font-weight:600;color:var(--w2-muted)}
+.c-stat--danger{background:var(--w2-danger-soft);border-color:var(--w2-danger)}
+.c-stat--danger .c-stat__n,.c-stat--danger .c-stat__l{color:var(--w2-danger-strong)}
+
+.c-dl{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin:0;font-size:15px}
+.c-dl dt{color:var(--w2-text-2)}
+.c-dl dd{margin:0;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;color:var(--w2-text)}
+
+/* Tabelas: rolagem horizontal no celular. */
+.c-tscroll{overflow-x:auto}
+.c-table{width:100%;border-collapse:collapse;font-size:15px}
+.c-table th,.c-table td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--w2-border);vertical-align:middle}
+.c-table th{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--w2-muted);font-weight:800;white-space:nowrap}
+.c-table th:nth-last-child(2){text-align:right}
+.c-title{font-weight:700;min-width:180px;overflow-wrap:anywhere}
+.c-tags{display:flex;flex-wrap:wrap;gap:4px}
+.c-row--deleted td{background:var(--w2-surface-2);color:var(--w2-muted)}
+.c-row--deleted .c-title span:first-child{text-decoration:line-through}
+
+/* Resultado de cada evento. */
+.c-result--ok{background:var(--w2-ok-soft);color:var(--w2-ok-strong)}
+.c-result--warn{background:var(--w2-warn-soft);color:var(--w2-warn-strong)}
+.c-result--muted{background:var(--w2-surface-2);color:var(--w2-text-2)}
+.c-result--bad{background:var(--w2-danger-soft);color:var(--w2-danger-strong)}
+
+.toolbar .field{flex:1 1 200px}

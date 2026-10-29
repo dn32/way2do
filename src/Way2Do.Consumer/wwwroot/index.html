@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Way2Do · Consumidor</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/way2do.css">
+<link rel="stylesheet" href="/consumer.css">
+<script src="/home.js" defer></script>
+</head>
+<body class="w2">
+<header class="d-header">
+  <div class="brand">
+    <span class="brand__mark"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg></span>Way2Do
+  </div>
+  <span class="appbar__sub">Consumidor simulado</span>
+</header>
+
+<main class="c-page c-page--narrow">
+  <section class="card c-stack">
+    <h1 class="page-title">Consumidor simulado</h1>
+    <p class="c-text">
+      Representa um sistema externo que apenas <strong>recebe</strong> as tarefas do Way2Do por webhooks e monta a
+      própria visão delas. Nada aqui lê o banco ou a API do Way2Do.
+    </p>
+    <p class="c-text">
+      Cada par de endereços cria um espaço isolado. Gere um par, cadastre a URL de entrada na tela
+      <strong>Integrações</strong> do Way2Do e acompanhe pelo painel.
+    </p>
+    <div>
+      <button class="btn btn--primary" id="generate" type="button">Gerar nova URL</button>
+    </div>
+    <p class="error-msg" id="error" role="alert" hidden></p>
+  </section>
+
+  <section class="card c-stack" id="result" hidden aria-live="polite">
+    <div class="field">
+      <label class="label" for="ingest-url">URL de entrada</label>
+      <div class="c-copy">
+        <input class="input c-mono" id="ingest-url" type="text" readonly>
+        <button class="btn btn--secondary" id="copy-ingest" type="button">Copiar</button>
+      </div>
+      <p class="hint">Cadastre esta URL na tela Integrações do Way2Do.</p>
+    </div>
+
+    <div class="notice notice--warn">
+      <div>
+        <p class="notice__title">A URL de entrada é secreta</p>
+        <p>Quem a tem consegue enviar eventos para este espaço. Não publique nem compartilhe.</p>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="label">Painel</span>
+      <a class="link c-mono c-break" id="view-url" href="/" target="_blank" rel="noopener noreferrer"></a>
+      <p class="hint">
+        Quem tem o endereço do painel vê os dados recebidos e liga o modo de falha, mas não consegue enviar eventos.
+      </p>
+    </div>
+  </section>
+</main>
+</body>
+</html>

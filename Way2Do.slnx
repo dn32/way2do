@@ -1,8 +1,10 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Way2Do.Api/Way2Do.Api.csproj" />
+    <Project Path="src/Way2Do.Consumer/Way2Do.Consumer.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Way2Do.Api.Tests/Way2Do.Api.Tests.csproj" />
+    <Project Path="tests/Way2Do.Consumer.Tests/Way2Do.Consumer.Tests.csproj" />
   </Folder>
 </Solution>

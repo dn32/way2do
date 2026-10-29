@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Way2Do · Consumidor</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/way2do.css">
+<link rel="stylesheet" href="/consumer.css">
+<script src="/dashboard.js" defer></script>
+</head>
+<body class="w2">
+<header class="d-header">
+  <a class="brand c-home" href="/">
+    <span class="brand__mark"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg></span>Way2Do
+  </a>
+  <span class="appbar__sub">Consumidor · painel do espaço</span>
+  <p class="c-status" id="status" role="status">Carregando…</p>
+</header>
+
+<main class="c-page">
+  <section class="notice notice--info" id="empty" hidden>
+    <div>
+      <p class="notice__title">Nenhum evento recebido ainda</p>
+      <p>Este espaço passa a existir quando o primeiro evento chega pela URL de entrada (por exemplo, o teste feito
+        ao cadastrar a integração no Way2Do). Se o consumidor foi reiniciado, os dados voltam no próximo evento,
+        com o retrato completo.</p>
+    </div>
+  </section>
+
+  <div class="c-stack" id="content" hidden>
+    <div class="c-grid">
+      <section class="panel c-stack" aria-labelledby="h-counters">
+        <h2 class="section-label" id="h-counters">Contadores</h2>
+        <div class="c-stats">
+          <div class="c-stat"><span class="c-stat__n" id="c-total">0</span><span class="c-stat__l">Tarefas</span></div>
+          <div class="c-stat"><span class="c-stat__n" id="c-pending">0</span><span class="c-stat__l">Pendentes</span></div>
+          <div class="c-stat"><span class="c-stat__n" id="c-done">0</span><span class="c-stat__l">Concluídas</span></div>
+          <div class="c-stat c-stat--danger"><span class="c-stat__n" id="c-urgent">0</span><span class="c-stat__l">Urgentes pendentes</span></div>
+          <div class="c-stat"><span class="c-stat__n" id="c-overdue">0</span><span class="c-stat__l">Vencidas</span></div>
+          <div class="c-stat"><span class="c-stat__n" id="c-deleted">0</span><span class="c-stat__l">Excluídas</span></div>
+        </div>
+        <div class="c-cols">
+          <div>
+            <h3 class="c-subtitle">Por prioridade</h3>
+            <dl class="c-dl" id="c-priority"></dl>
+          </div>
+          <div>
+            <h3 class="c-subtitle">Por usuário</h3>
+            <dl class="c-dl" id="c-user"></dl>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel c-stack" aria-labelledby="h-health">
+        <h2 class="section-label" id="h-health">Saúde da integração</h2>
+        <div class="c-stats">
+          <div class="c-stat"><span class="c-stat__n" id="h-received">0</span><span class="c-stat__l">Eventos recebidos</span></div>
+          <div class="c-stat"><span class="c-stat__n" id="h-duplicates">0</span><span class="c-stat__l">Duplicados descartados</span></div>
+          <div class="c-stat"><span class="c-stat__n" id="h-stale">0</span><span class="c-stat__l">Fora de ordem descartados</span></div>
+          <div class="c-stat"><span class="c-stat__n" id="h-snapshots">0</span><span class="c-stat__l">Retratos pedidos (205)</span></div>
+        </div>
+        <dl class="c-dl">
+          <dt>Latência média</dt><dd id="h-latency-avg">—</dd>
+          <dt>Latência máxima</dt><dd id="h-latency-max">—</dd>
+          <dt>Último evento</dt><dd id="h-last">—</dd>
+          <dt>Descartados por limite</dt><dd id="h-limit">0</dd>
+        </dl>
+        <div>
+          <h3 class="c-subtitle">Eventos por tipo</h3>
+          <dl class="c-dl" id="h-types"></dl>
+        </div>
+      </section>
+
+      <section class="panel c-stack" aria-labelledby="h-failure">
+        <h2 class="section-label" id="h-failure">Modo de falha</h2>
+        <p class="c-text">Recurso de demonstração: faz este consumidor responder 503, para ver o Way2Do tentar de novo
+          com backoff e se recuperar. <strong>Fora do ar</strong> recusa tudo sem processar; <strong>Instável</strong>
+          processa o evento mas perde a confirmação em metade das vezes, e o reenvio aparece em "Duplicados
+          descartados". Não altera nenhum dado do Way2Do.</p>
+        <div class="seg" role="group" aria-label="Modo de falha">
+          <button class="seg__opt" type="button" data-mode="off" aria-pressed="false">Desligado</button>
+          <button class="seg__opt" type="button" data-mode="down" aria-pressed="false">Fora do ar</button>
+          <button class="seg__opt" type="button" data-mode="flaky" aria-pressed="false">Instável</button>
+        </div>
+        <dl class="c-dl">
+          <dt>Estado atual</dt><dd id="f-mode">—</dd>
+          <dt>Recusadas de propósito</dt><dd id="f-refused">0</dd>
+        </dl>
+        <p class="error-msg" id="f-error" role="alert" hidden></p>
+      </section>
+    </div>
+
+    <section class="panel c-stack" aria-labelledby="h-todos">
+      <h2 class="section-label" id="h-todos">Tarefas recebidas</h2>
+      <div class="toolbar">
+        <div class="field">
+          <label class="label" for="filter-user">Usuário</label>
+          <select class="input" id="filter-user">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="label" for="filter-status">Status</label>
+          <select class="input" id="filter-status">
+            <option value="active">Todas (sem excluídas)</option>
+            <option value="pending">Pendentes</option>
+            <option value="done">Concluídas</option>
+            <option value="deleted">Excluídas</option>
+            <option value="all">Todas (com excluídas)</option>
+          </select>
+        </div>
+      </div>
+      <div class="c-tscroll">
+        <table class="c-table">
+          <thead>
+            <tr>
+              <th scope="col">Título</th>
+              <th scope="col">Usuário</th>
+              <th scope="col">Status</th>
+              <th scope="col">Prioridade</th>
+              <th scope="col">Urgente</th>
+              <th scope="col">Vencimento</th>
+              <th scope="col">Tags</th>
+              <th scope="col">Versão</th>
+              <th scope="col">Última atualização</th>
+            </tr>
+          </thead>
+          <tbody id="todos"></tbody>
+        </table>
+      </div>
+      <p class="hint" id="todos-empty" hidden>Nenhuma tarefa com esses filtros.</p>
+    </section>
+
+    <section class="panel c-stack" aria-labelledby="h-events">
+      <h2 class="section-label" id="h-events">Últimos eventos</h2>
+      <div class="c-tscroll">
+        <table class="c-table">
+          <thead>
+            <tr>
+              <th scope="col">Recebido</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Tarefa</th>
+              <th scope="col">Versão</th>
+              <th scope="col">Resultado</th>
+            </tr>
+          </thead>
+          <tbody id="events"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>
