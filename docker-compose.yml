@@ -1,0 +1,24 @@
+# Execução local. Os serviços da API, do consumidor e do frontend entram na etapa 8.
+# Variáveis obrigatórias vêm do .env (copie de .env.example).
+name: way2do
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: way2do
+      POSTGRES_USER: way2do
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    # Só em 127.0.0.1: o Docker publica em todas as interfaces por padrão e passa por cima do firewall.
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U way2do -d way2do"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db-data:

@@ -51,4 +51,20 @@ Consumidor 5200 · PostgreSQL 5433. Não usar 5173, 8080 nem 5432 (ocupadas por 
 
 ## Comandos
 
-> _A preencher conforme os projetos forem criados (subir o banco, rodar API, frontend, consumidor e testes)._
+Pré-requisito: `.env` na raiz (copiado de `.env.example` e preenchido; não versionado).
+
+```bash
+docker compose up -d db                      # Postgres em 127.0.0.1:5433
+dotnet build Way2Do.slnx
+dotnet test Way2Do.slnx                      # sobe um Postgres próprio em container (Testcontainers)
+
+# API em desenvolvimento (http://localhost:5100). Rodar de dentro da pasta do projeto: o appsettings.Development.json
+# é lido do diretório atual.
+set -a && . ./.env && set +a && cd src/Way2Do.Api && dotnet run
+
+# Migrations (ferramenta local; restaurar uma vez com `dotnet tool restore`)
+dotnet ef migrations add <Nome> --project src/Way2Do.Api --output-dir Data/Migrations
+```
+
+Na primeira subida com banco vazio, o EF registra uma falha ao consultar `__EFMigrationsHistory` antes de criá-la; é
+esperado e não se repete.

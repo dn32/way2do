@@ -120,7 +120,7 @@ subseções abaixo.
 |---|---|---|---|---|
 | 0 | Documentação e revisão | analisa o enunciado; propõe alternativas e avalia as propostas do Marcelo; redige e revisa os documentos; valida os diagramas | define os padrões de trabalho; levanta requisitos e propõe soluções (integração, VPS, Cloudflare, regra urgente…); questiona e decide; pede revisões e aponta erros; COMMIT | ✅ documentação revisada e commitada |
 | 1 | Telas no Claude Design (paralela às etapas 2–4) | gera as telas a partir do briefing (apêndice A) e aplica os ajustes pedidos | revisão, solicitação de ajustes e aprovação | ✅ telas aprovadas; marca documentada |
-| 2 | Base do backend | implementa API, banco, seed e autenticação, com testes | preenche o `.env`; revisão; COMMIT | ⬜ |
+| 2 | Base do backend | implementa API, banco, seed e autenticação, com testes | preenche o `.env`; revisão; COMMIT | ⏳ implementada e testada; aguardando revisão e COMMIT |
 | 3 | Domínio e casos compartilhados | implementa merge, regra urgente e ordenação, guiado pelos casos | valida a tabela de casos da regra urgente; revisão; COMMIT | ⬜ |
 | 4 | Sincronização no servidor | implementa push e pull com testes de integração; revisão de marco | revisão; COMMIT | ⬜ |
 | 5 | Frontend base | implementa as telas e o banco local; confere no navegador | valida o visual; revisão; COMMIT | ⬜ |
@@ -185,6 +185,11 @@ subseções abaixo.
 - **Marcelo**: preencher o `.env` local (ou usar o de `credenciais.local.md`); revisão; COMMIT.
 - **Pronto quando**: `dotnet test` verde; login e logout testados (sucesso, senha errada com erro genérico,
   `Origin` inválido recusado, cookie com as flags corretas); API recusa subir em produção sem chave do JWT.
+- **Como foi**: 16 testes de integração com Postgres real; um deles pegou o token sendo aceito também no cabeçalho
+  `Authorization` (o JwtBearer volta ao cabeçalho quando não há cookie), corrigido. Execução real com Compose +
+  `dotnet run` e `curl`. `Microsoft.Extensions.Identity.Core` removido (já vem no framework) e versões do EF
+  alinhadas. O `.env` local foi criado pela IA a partir de `credenciais.local.md`. Versões das bibliotecas
+  resolvidas pelo NuGet; o context7 não foi necessário. Novo: `GET /api/auth/me`.
 - **Commits**: `feat(api): base da API, banco e autenticação`.
 
 ### Etapa 3 — Domínio e casos compartilhados
@@ -312,7 +317,7 @@ Preenchido ao fim de cada etapa; vira a seção "Uso de inteligência artificial
 |---|---|---|
 | 0 | leitura do enunciado; propostas de arquitetura com alternativas e recomendação (PostgreSQL + outbox, LWW por campo, lock por usuário, tags, cookie `HttpOnly`, anti-SSRF, código 205); avaliação crítica das propostas do Marcelo; redação dos documentos; revisões de segurança e lacunas; validação dos diagramas | padrões de trabalho (portões, revisão antes de commit, credenciais fora do repositório); requisitos e soluções propostos por ele (negação na regra urgente, VPS com Cloudflare, consumidor com painel e métricas, cadastro por um campo só, par de URLs sem login, URLs que sobrevivem ao reinício, retrato pedido pelo código de resposta, prova no celular real); questionamentos que mudaram o desenho; revisões que ele pediu e erros que ele encontrou; todas as decisões finais |
 | 1 | agente gerou as 31 pranchetas a partir do briefing; aplicou a rodada de ajuste e encontrou a causa do rótulo escuro (reset de CSS mais específico que as classes dos botões); recalculou o contraste de cada combinação; montou a página da marca a partir do CSS real e conferiu a renderização no navegador (celular e desktop) | briefing aprovado; revisão das telas; pedido de cores mais leves nos botões; pedido da marca como documento e em HTML; aprovação final |
-| 2 | | |
+| 2 | implementação da solução .NET, do modelo de dados e da autenticação; 16 testes de integração com Postgres real; os testes pegaram uma falha de segurança (token aceito também no cabeçalho `Authorization`) e ela foi corrigida; execução real verificada com `curl`; dependência desnecessária removida (`Identity.Core`, já no framework) | liberação com DESENVOLVA; padrões de segurança definidos na etapa 0 (cookie, credenciais fora do repositório); revisão e COMMIT pendentes |
 | 3 | | |
 | 4 | | |
 | 5 | | |

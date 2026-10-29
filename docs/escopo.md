@@ -62,6 +62,8 @@ Infra: **PostgreSQL** via Docker Compose.
   sem CORS. `localhost` é contexto seguro, então o cookie `Secure` funciona também no ambiente local.
 - **CSRF**: `SameSite=Strict` impede o envio do cookie a partir de outros sites; como segunda barreira, as rotas
   que alteram estado (inclusive o login) conferem o cabeçalho `Origin` contra a lista `Auth:AllowedOrigins`.
+  Requisição sem `Origin` segue: navegadores sempre o enviam em POST entre origens, então a ausência indica um
+  cliente que não é uma página de outro site.
 - JWT assinado com HS256 (algoritmo fixo); emissor, audiência e validade sempre validados.
 - Login com erro **genérico** ("usuário ou senha inválidos"), sem revelar se o usuário existe.
 - Offline o token não é usado (nada vai para a rede). Para abrir o app sem conexão, o cliente guarda no IndexedDB
@@ -107,8 +109,7 @@ o desenvolvimento entra aqui com o motivo, e a tabela vai para o README.
 | `Npgsql.EntityFrameworkCore.PostgreSQL` | API | acesso ao Postgres com migrations; SQL explícito nos trechos sensíveis |
 | `Microsoft.EntityFrameworkCore.Design` | API (só em desenvolvimento) | geração das migrations pela ferramenta `dotnet ef` |
 | `Microsoft.AspNetCore.Authentication.JwtBearer` | API | validação do JWT (lido do cookie) |
-| `Microsoft.Extensions.Identity.Core` | API | `PasswordHasher` (PBKDF2) sem trazer o ASP.NET Identity inteiro |
-| `xunit`, `Microsoft.NET.Test.Sdk` | testes .NET | padrão do ecossistema .NET |
+| `xunit`, `xunit.runner.visualstudio`, `Microsoft.NET.Test.Sdk` | testes .NET | padrão do ecossistema .NET (o runner executa os testes no `dotnet test`) |
 | `Testcontainers.PostgreSql` | testes .NET | Postgres real nos testes de integração (lock, sequence e `SKIP LOCKED` não existem em banco em memória) |
 | `Microsoft.AspNetCore.Mvc.Testing` | testes .NET | sobe a API em memória (`WebApplicationFactory`) para testar os endpoints de ponta a ponta |
 | `react`, `react-dom` | web | UI (justificativa da troca por Angular na seção 2) |
@@ -545,6 +546,7 @@ Sem design sofisticado (fora de escopo pelo enunciado): o foco é clareza e uso 
 |---|---|---|
 | `POST` | `/api/auth/login` | usuário e senha → cookie `HttpOnly` com o JWT + dados não secretos do usuário (id, nome) |
 | `POST` | `/api/auth/logout` | apaga o cookie |
+| `GET` | `/api/auth/me` | usuário da sessão atual (o app confere se a sessão ainda vale ao abrir online) |
 | `POST` | `/api/sync/push` | lote de até 500 operações → resultado por operação (recusadas trazem o estado do servidor) |
 | `GET` | `/api/sync/pull?since=&limit=` | alterações desde o cursor + novo cursor + indicação de que há mais páginas |
 | `GET` | `/api/integrations` | assinaturas do usuário logado, com a URL **mascarada** e o `dashboardUrl`, se houver |
@@ -741,8 +743,12 @@ docs/
   escopo.md
   arquitetura.md
   plano-de-execucao.md
+  marca.html             identidade visual (abrir no navegador)
+  design/way2do.css      tokens e componentes do design aprovado
 .claude/skills/
   roteiro-demo/          skill de aceitação ponta a ponta (navegador + celular)
+Way2Do.slnx              solução .NET
+dotnet-tools.json        ferramenta local `dotnet-ef` (migrations)
 docker-compose.yml       execução local completa
 docker-compose.vps.yml   acréscimos para a VPS (cloudflared, sem portas publicadas)
 .env.example             nomes das variáveis, sem valores secretos
