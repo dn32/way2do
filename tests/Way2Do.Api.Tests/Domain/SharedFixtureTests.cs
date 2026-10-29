@@ -38,6 +38,29 @@ public sealed class SharedFixtureTests
             $"\"{titulo}\" / \"{descricao}\": esperado {(urgente ? "urgente" : "não urgente")} ({motivo})");
     }
 
+    // ---------- identidade da tag ----------
+
+    public static TheoryData<string, string, string?> TagCases()
+    {
+        var data = new TheoryData<string, string, string?>();
+        foreach (var c in Load("tags.json").GetProperty("casos").EnumerateArray())
+            data.Add(c.GetProperty("motivo").GetString()!, c.GetProperty("entrada").GetString()!, NullableString(c, "esperado"));
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(TagCases))]
+    public void Identidade_da_tag(string motivo, string entrada, string? esperado)
+    {
+        if (esperado is null)
+        {
+            Assert.Throws<InvalidChangeException>(() => TodoMerge.NormalizeTag(entrada));
+            return;
+        }
+        var obtido = TodoMerge.NormalizeTag(entrada);
+        Assert.True(obtido == esperado, $"\"{entrada}\": esperado \"{esperado}\", obtido \"{obtido}\" [{string.Join(" ", obtido.Select(c => ((int)c).ToString("X4")))}] ({motivo})");
+    }
+
     // ---------- ordenação ----------
 
     public static TheoryData<string> OrderingScenarios()

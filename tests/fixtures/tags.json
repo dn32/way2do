@@ -1,0 +1,15 @@
+{
+  "descricao": "Identidade da tag (escopo, seção 3): a mesma entrada precisa virar a mesma chave no servidor (C#) e no aparelho (TypeScript). \"esperado\" null = tag recusada.",
+  "casos": [
+    { "entrada": "Obra", "esperado": "obra", "motivo": "minúsculas" },
+    { "entrada": "  obra\t", "esperado": "obra", "motivo": "espaços nas pontas" },
+    { "entrada": "\uFEFFobra", "esperado": "obra", "motivo": "U+FEFF nas pontas, como o trim() do JavaScript" },
+    { "entrada": "Ac\u0327a\u0303o", "esperado": "ação", "motivo": "forma decomposta vira NFC" },
+    { "entrada": "λογος", "esperado": "λογοσ", "motivo": "sigma final igual ao comum" },
+    { "entrada": "ΣΟΦΟΣ", "esperado": "σοφοσ", "motivo": "maiúsculo vira sigma comum" },
+    { "entrada": "İstanbul", "esperado": "istanbul", "motivo": "İ (U+0130) vira um único i, sem ponto combinante" },
+    { "entrada": "Straße", "esperado": "straße", "motivo": "ß já é minúsculo" },
+    { "entrada": "   ", "esperado": null, "motivo": "vazia" },
+    { "entrada": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "esperado": null, "motivo": "41 caracteres" }
+  ]
+}

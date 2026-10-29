@@ -26,14 +26,16 @@ public static class TextNormalizer
             if (Rune.GetUnicodeCategory(rune) != UnicodeCategory.NonSpacingMark)
                 sb.Append(rune.ToString());
         }
-        return LowerLikeJavaScript(sb.ToString());
+        return LowerShared(sb.ToString());
     }
 
     /// <summary>
-    /// Minúsculas como no frontend: <c>toLowerCase()</c> seguido da troca do sigma final (ς → σ), que o .NET não
-    /// produz. Sem a troca, "ς" digitado direto ficaria diferente nos dois lados.
+    /// Minúsculas iguais nos dois lados. Em JavaScript:
+    /// <c>texto.replace(/İ/g, 'i').toLowerCase().replace(/ς/g, 'σ')</c>. As duas trocas cobrem as únicas
+    /// diferenças entre o <c>toLowerCase()</c> do JS e o <c>ToLowerInvariant()</c> do .NET: o İ turco (o .NET o mantém,
+    /// o JS gera "i" + ponto combinante; os dois passam a gerar "i") e o sigma final (só o JS gera "ς").
     /// </summary>
-    public static string LowerLikeJavaScript(string text) => text.ToLowerInvariant().Replace('ς', 'σ');
+    public static string LowerShared(string text) => text.Replace('İ', 'i').ToLowerInvariant().Replace('ς', 'σ');
 
     /// <summary>
     /// Texto que o Postgres consegue gravar: sem caractere nulo (U+0000) e sem metade de par substituto (UTF-16

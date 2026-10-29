@@ -156,7 +156,7 @@ public static class TodoMerge
     {
         if (!TextNormalizer.IsStorable(tag))
             throw new InvalidChangeException("tags", "caractere inválido");
-        var name = TextNormalizer.LowerLikeJavaScript(
+        var name = TextNormalizer.LowerShared(
             TextNormalizer.TrimLikeJavaScript(tag.Normalize(System.Text.NormalizationForm.FormC)));
         if (name.Length == 0)
             throw new InvalidChangeException("tags", "tag vazia");

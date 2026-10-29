@@ -28,8 +28,8 @@ Consumidor 5200 · PostgreSQL 5433. Não usar 5173, 8080 nem 5432 (ocupadas por 
   Firebase, Azure Mobile Apps etc.). Dexie é só armazenamento.
 - **Um único caminho de escrita**: tarefas só são gravadas no servidor via `POST /api/sync/push`, passando pelo merge.
 - **Regra "urgente" e ordenação existem em C# e em TS.** Qualquer mudança vale para os dois lados e para
-  `tests/fixtures/urgencia.json`, que as duas suítes consomem. O mesmo vale para a ordenação (`ordenacao.json`) e
-  o merge (`merge.json`).
+  `tests/fixtures/urgencia.json`, que as duas suítes consomem. O mesmo vale para a ordenação (`ordenacao.json`), o
+  merge (`merge.json`) e a identidade das tags (`tags.json`).
 - **Merge LWW por campo** é o mesmo algoritmo no cliente e no servidor; mudar um exige mudar o outro.
 - Sem super-engenharia: nada de broker, cache distribuído ou camadas extras sem uma justificativa registrada no escopo.
 - **Interface segue a marca**: cores, fontes, raios, ícones e componentes de [docs/marca.html](docs/marca.html), com os
@@ -50,6 +50,12 @@ Consumidor 5200 · PostgreSQL 5433. Não usar 5173, 8080 nem 5432 (ocupadas por 
   suba um servidor HTTP temporário em `127.0.0.1` numa porta livre (ex.: `python -m http.server 5310 --bind
   127.0.0.1` na pasta) e encerre-o ao terminar.
 
+## Cuidado com caracteres invisíveis
+
+As ferramentas de edição podem gravar sequências como `\uFEFF` ou marcas combinantes como o caractere literal, e não
+como escape. Depois de escrever texto com escapes Unicode (testes de normalização, casos JSON), confira os bytes do
+arquivo e mantenha os escapes visíveis: um caractere invisível muda o teste sem ninguém perceber.
+
 ## Comandos
 
 Pré-requisito: `.env` na raiz (copiado de `.env.example` e preenchido; não versionado).
@@ -62,6 +68,11 @@ dotnet test Way2Do.slnx                      # sobe um Postgres próprio em cont
 # API em desenvolvimento (http://localhost:5100). Rodar de dentro da pasta do projeto: o appsettings.Development.json
 # é lido do diretório atual.
 set -a && . ./.env && set +a && cd src/Way2Do.Api && dotnet run
+
+# Frontend (http://localhost:5300; o Vite encaminha /api para a API em 5100)
+cd src/web && npm install && npm run dev
+cd src/web && npm test                      # Vitest: domínio (casos compartilhados), banco local, formulário
+cd src/web && npm run build                 # TypeScript estrito + build de produção
 
 # Migrations (ferramenta local; restaurar uma vez com `dotnet tool restore`)
 dotnet ef migrations add <Nome> --project src/Way2Do.Api --output-dir Data/Migrations

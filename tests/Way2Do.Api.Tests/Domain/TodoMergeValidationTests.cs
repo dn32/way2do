@@ -115,7 +115,7 @@ public sealed class TodoMergeValidationTests
     public void Grafias_diferentes_da_mesma_tag_viram_uma_so()
     {
         var task = new TodoItem { Id = Guid.NewGuid(), Title = "x", CreatedAt = Now.AddDays(-1) };
-        var decomposed = "Ação"; // "Ação" em NFD
+        var decomposed = "Ac\u0327a\u0303o"; // "Ação" em NFD
         var change = new TodoChange
         {
             Tags = new Dictionary<string, TagState>

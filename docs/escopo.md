@@ -68,8 +68,12 @@ Infra: **PostgreSQL** via Docker Compose.
 - Login com erro **genérico** ("usuário ou senha inválidos"), sem revelar se o usuário existe.
 - Offline o token não é usado (nada vai para a rede). Para abrir o app sem conexão, o cliente guarda no IndexedDB
   apenas os dados **não secretos** do usuário logado (id e nome), que indicam qual banco local abrir.
-- Logout: `POST /api/auth/logout` apaga o cookie. Se estiver offline, o app esquece o usuário logado na hora e
-  envia o logout ao servidor assim que a conexão voltar, para o cookie não continuar válido no aparelho.
+- Logout: `POST /api/auth/logout` apaga o cookie. O app esquece o usuário logado na hora (sem esperar a rede). Se o
+  servidor não confirmar com sucesso (sem conexão, timeout ou erro, como um 502 com a API fora), uma marca fica no
+  banco do aparelho (`way2do-session`, não no do usuário) e o pedido é reenviado ao abrir o app e quando a conexão
+  voltar, para o cookie não continuar válido. Um login novo descarta a marca (o cookie já é outro).
+- A sessão local é observada por todas as abas: login ou logout em uma aba vale para as outras, e nenhuma aba fica
+  com um usuário diferente do cookie.
 - Sem tela de cadastro nem recuperação de senha (fora de escopo pelo enunciado). Usuários de teste criados no seed:
   **`ana`** e **`bruno`**. Dois usuários permitem demonstrar o isolamento entre contas.
 - **Autorização por recurso**: toda leitura e alteração confere o dono. Tarefas de outro usuário são recusadas no
@@ -97,8 +101,8 @@ Infra: **PostgreSQL** via Docker Compose.
 - Aceitação ponta a ponta: o roteiro da demonstração (seção 14) executado no navegador e num celular Android pela
   skill `roteiro-demo` (plano de execução, seção 2).
 - **Casos compartilhados**: a regra "urgente", a ordenação e o merge existem no cliente (TS) e no servidor (C#). Os
-  casos de teste ficam em JSON (`tests/fixtures/urgencia.json`, `ordenacao.json` e `merge.json`) lidos pelas duas
-  suítes, garantindo que as duas implementações concordam. Comparações de texto usam a ordem de código UTF-16, que é
+  casos de teste ficam em JSON (`tests/fixtures/urgencia.json`, `ordenacao.json`, `merge.json` e `tags.json`) lidos
+  pelas duas suítes, garantindo que as duas implementações concordam. Comparações de texto usam a ordem de código UTF-16, que é
   a nativa nas duas linguagens (`string.CompareOrdinal` e o `<` do JavaScript), sem depender de configuração regional.
 
 ### Bibliotecas e por quê
@@ -114,7 +118,8 @@ o desenvolvimento entra aqui com o motivo, e a tabela vai para o README.
 | `Testcontainers.PostgreSql` | testes .NET | Postgres real nos testes de integração (lock, sequence e `SKIP LOCKED` não existem em banco em memória) |
 | `Microsoft.AspNetCore.Mvc.Testing` | testes .NET | sobe a API em memória (`WebApplicationFactory`) para testar os endpoints de ponta a ponta |
 | `react`, `react-dom` | web | UI (justificativa da troca por Angular na seção 2) |
-| `vite`, `typescript` | web | build rápido e tipagem |
+| `vite`, `typescript`, `@vitejs/plugin-react` | web | build rápido, tipagem e o plugin do React para o Vite |
+| `@types/node` | web (só desenvolvimento) | tipos do Node para a configuração do Vite e para os testes que leem `tests/fixtures` |
 | `dexie`, `dexie-react-hooks` | web | IndexedDB com transações e consultas reativas — **só armazenamento** |
 | `vite-plugin-pwa` | web | gera o Service Worker do *app shell* com Workbox — não participa da sincronização |
 | `vitest`, `fake-indexeddb`, `@testing-library/react`, `jsdom` | testes web | testes do motor de sync, da regra urgente e dos componentes sem navegador (`jsdom` simula o DOM) |
@@ -173,7 +178,9 @@ duas se perderia. Por isso cada tag guarda `{ present, ts }` (adicionada ou remo
   resultado é `obra, cliente, financeiro`;
 - empate exato de timestamp: a presença vence (a tag não some por acaso);
 - identidade da tag: forma Unicode NFC, sem espaços nas pontas e em minúsculas (`Obra`, ` obra ` e a forma
-  decomposta de `Ação` são a mesma tag); até 40 caracteres e até 20 tags visíveis por tarefa;
+  decomposta de `Ação` são a mesma tag); até 40 caracteres e até 20 tags visíveis por tarefa. As minúsculas são as
+  mesmas nos dois lados: o `İ` turco vira `i` e o sigma final vira `σ` antes de comparar (as únicas diferenças entre
+  o `toLowerCase()` do JavaScript e o `ToLowerInvariant()` do .NET). Casos em `tests/fixtures/tags.json`;
 - para a UI, filtros e eventos da integração, as tags são a lista das entradas com `present: true`.
 
 ---

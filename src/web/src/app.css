@@ -1,0 +1,197 @@
+/*
+ * Layout da aplicação sobre os tokens e componentes de docs/design/way2do.css. O design desenha pranchetas de tamanho
+ * fixo (.phone 390×844); aqui elas viram página de verdade: rolagem do documento, barras fixas e camadas sobrepostas.
+ */
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+/* ---------- camadas (painéis, diálogos, formulário em tela cheia) ---------- */
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+.layer .sheet {
+  max-height: 92dvh;
+  overflow-y: auto;
+}
+.layer.modal {
+  overflow-y: auto;
+}
+.layer.fullscreen {
+  display: flex;
+  flex-direction: column;
+  background: var(--w2-surface);
+}
+.layer.fullscreen .scroll {
+  background: var(--w2-surface);
+  padding: 16px 16px 104px;
+}
+
+/* ---------- celular ---------- */
+.m-app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.m-top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.m-app .scroll {
+  overflow: visible;
+}
+.m-app .bottombar,
+.layer.fullscreen .bottombar {
+  position: fixed;
+}
+.brand--title {
+  font-size: 20px;
+}
+.appbar--form {
+  padding: 0 8px 0 4px;
+}
+.appbar__heading {
+  flex: 1;
+  font-size: 20px;
+  font-weight: 800;
+}
+.menu--flat {
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* ---------- desktop ---------- */
+.sync--desk {
+  padding: 6px 24px;
+}
+.panel--tags {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+.panel--tags .section-label {
+  padding: 4px 12px;
+}
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.toolbar .field {
+  flex: 0 1 200px;
+}
+.toolbar .field:nth-child(2) {
+  flex: 0 1 340px;
+}
+/* Só na barra horizontal do desktop: no painel vertical do celular, flex-basis viraria altura. */
+.toolbar .field--grow {
+  flex: 1 1 260px;
+}
+.task__head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.spacer {
+  flex: 1;
+}
+
+/* ---------- lista ---------- */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.group + .group {
+  padding-top: 8px;
+}
+
+/* ---------- formulário ---------- */
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.row {
+  display: flex;
+  gap: 8px;
+}
+.btn--suggestion {
+  min-height: 44px;
+  padding: 0 14px;
+  border-width: 1px;
+  border-color: var(--w2-border-strong);
+}
+.notice__text {
+  flex: 1;
+}
+
+/* ---------- login ---------- */
+.login {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  background: var(--w2-surface);
+}
+.login__card {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 64px 20px 24px;
+}
+.login__head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+.brand--login {
+  font-size: 28px;
+}
+.brand--login .brand__mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+.brand--login .brand__mark .ico {
+  width: 26px;
+  height: 26px;
+}
+.login__title {
+  font-size: 26px;
+  font-weight: 800;
+  margin-top: 16px;
+}
+.login__lead {
+  color: var(--w2-text-2);
+}
+.login__hint {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+@media (min-width: 900px) {
+  .login {
+    align-items: center;
+    background: var(--w2-bg);
+  }
+  .login__card {
+    background: var(--w2-surface);
+    border: 1px solid var(--w2-border);
+    border-radius: 16px;
+    padding: 32px;
+  }
+}

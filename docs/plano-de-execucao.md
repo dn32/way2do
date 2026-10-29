@@ -122,8 +122,8 @@ subseções abaixo.
 | 1 | Telas no Claude Design (paralela às etapas 2–4) | gera as telas a partir do briefing (apêndice A) e aplica os ajustes pedidos | revisão, solicitação de ajustes e aprovação | ✅ telas aprovadas; marca documentada |
 | 2 | Base do backend | implementa API, banco, seed e autenticação, com testes | preenche o `.env`; revisão; COMMIT | ✅ `0731b89` |
 | 3 | Domínio e casos compartilhados | implementa merge, regra urgente e ordenação, guiado pelos casos | valida a tabela de casos da regra urgente; revisão; COMMIT | ✅ `e710508` |
-| 4 | Sincronização no servidor | implementa push e pull com testes de integração; revisão de marco | revisão; COMMIT | ⏳ implementada, testada e revisada; aguardando COMMIT |
-| 5 | Frontend base | implementa as telas e o banco local; confere no navegador | valida o visual; revisão; COMMIT | ⬜ |
+| 4 | Sincronização no servidor | implementa push e pull com testes de integração; revisão de marco | revisão; COMMIT | ✅ `2ee7b8d` |
+| 5 | Frontend base | implementa as telas e o banco local; confere no navegador | valida o visual; revisão; COMMIT | ⏳ implementada, testada e revisada; aguardando validação do visual e COMMIT |
 | 6 | Motor de sincronização e PWA | implementa fila, sync, indicador e Service Worker; testa offline; revisão de marco | revisão; COMMIT | ⬜ |
 | 7 | Integração externa e consumidor simulado | implementa a API de integrações e o worker; subagente faz o consumidor | revisão; COMMIT | ⬜ |
 | 8 | Docker, Compose e VPS | escreve Dockerfiles e Compose; cria o túnel; revisão de marco | informa o domínio; autoriza o túnel; opera a VPS; revisão; COMMIT | ⬜ |
@@ -240,6 +240,16 @@ subseções abaixo.
 - **Marcelo**: validar o visual; revisão; COMMIT.
 - **Pronto quando**: `npm test` verde (inclui os casos compartilhados); CRUD completo funcionando contra o banco
   local; layout conferido em largura de celular e de desktop.
+- **Como foi**: domínio em TypeScript espelhando o C# e testado contra os mesmos JSON (paridade provada por teste,
+  inclusive um arquivo novo de identidade de tag); banco Dexie por usuário com a operação enfileirada na mesma
+  transação da escrita (a fila foi antecipada da etapa 6: nasce no mesmo ponto do código); telas do design aprovado
+  em celular e desktop, conferidas no navegador (login, CRUD, filtros, busca sem acento, tags, exclusão, saída com
+  pendências, isolamento entre usuários). Revisões: a de código achou 10 pontos (o principal: o formulário comparava
+  com a versão atual da tarefa e desfazia edições de outro aparelho) e a de segurança achou um médio (o logout podia
+  deixar o cookie válido); todos corrigidos, mais as observações (Vite liberando o repositório inteiro, tags
+  `__proto__`/`constructor`, abas com usuários diferentes, `İ` divergindo entre C# e JS). 95 testes no frontend e
+  135 no backend; checagem de mutação nas 5 correções principais. O indicador mostra só "Pendente (N)": os demais
+  estados chegam com o motor de sincronização (etapa 6).
 - **Commits**: `feat(web): telas, banco local e regras de ordenação`.
 
 ### Etapa 6 — Motor de sincronização e PWA
@@ -340,7 +350,7 @@ Preenchido ao fim de cada etapa; vira a seção "Uso de inteligência artificial
 | 2 | implementação da solução .NET, do modelo de dados e da autenticação; 16 testes de integração com Postgres real; os testes pegaram uma falha de segurança (token aceito também no cabeçalho `Authorization`) e ela foi corrigida; execução real verificada com `curl`; dependência desnecessária removida (`Identity.Core`, já no framework) | liberação com DESENVOLVA; padrões de segurança definidos na etapa 0 (cookie, credenciais fora do repositório); revisão e COMMIT pendentes |
 | 3 | implementação do domínio guiada pelos casos; escrita dos casos de borda; checagem de mutação para provar que os testes detectam quebras | liberação da etapa; regra urgente com negação definida por ele na etapa 0; validação da tabela de casos e COMMIT pendentes |
 | 4 | implementação de push e pull; testes de integração e de concorrência; checagem de mutação; revisão de marco das etapas 2 a 4 com correção dos 10 achados | liberação da etapa ("próxima"); revisão e COMMIT pendentes |
-| 5 | | |
+| 5 | implementação do frontend a partir do design aprovado; domínio em TS com paridade testada; verificação no navegador; revisões de código e de segurança com correção de todos os achados; checagem de mutação | liberação da etapa ("próxima"); validação do visual e COMMIT pendentes |
 | 6 | | |
 | 7 | | |
 | 8 | | |
