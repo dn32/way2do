@@ -1,0 +1,22 @@
+# Normaliza fim de linha: LF no repositório e no disco, independente do sistema operacional.
+* text=auto eol=lf
+
+# Arquivos que exigem CRLF no Windows
+*.sln     text eol=crlf
+*.slnx    text eol=crlf
+*.cmd     text eol=crlf
+*.bat     text eol=crlf
+*.ps1     text eol=crlf
+
+# Binários
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.webp    binary
+*.pdf     binary
+*.woff    binary
+*.woff2   binary
+*.ttf     binary
+*.zip     binary

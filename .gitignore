@@ -124,3 +124,7 @@ desktop.ini
 
 # Enunciado do processo seletivo
 docs/desafio-tecnico-todo-list-offline-first.pdf
+
+# Credenciais (enviadas por e-mail, nunca versionadas)
+credenciais*
+*.local.md
