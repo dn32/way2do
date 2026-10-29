@@ -1,0 +1,126 @@
+# =========================================================
+# .NET / C#
+# =========================================================
+
+# Saídas de build
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+publish/
+out/
+
+# Visual Studio / Rider
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+.idea/
+*.sln.iml
+_ReSharper*/
+*.DotSettings.user
+
+# NuGet
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+
+# Testes e cobertura
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+coverage*.info
+TestResults/
+
+# Bancos locais (SQLite etc.)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Segredos e configurações locais
+appsettings.*.local.json
+appsettings.Local.json
+secrets.json
+*.pfx
+*.pem
+
+# =========================================================
+# Node / React
+# =========================================================
+
+node_modules/
+.pnp
+.pnp.js
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Builds
+dist/
+dist-ssr/
+build/
+.vite/
+.next/
+.turbo/
+.cache/
+.parcel-cache/
+*.tsbuildinfo
+
+# Cobertura e relatórios de teste
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.*.local
+
+# =========================================================
+# Editor / sistema operacional
+# =========================================================
+
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Screenshots de sessões de teste
+.playwright-mcp/
+
+# Enunciado do processo seletivo
+docs/desafio-tecnico-todo-list-offline-first.pdf
