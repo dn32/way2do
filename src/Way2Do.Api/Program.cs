@@ -1,121 +1,45 @@
-using System.Net;
-using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using Way2Do.Api.Auth;
 using Way2Do.Api.Data;
+using Way2Do.Api.Hosting;
 using Way2Do.Api.Sync;
 using Way2Do.Api.Webhooks;
+
+// Roteiro da API: serviços, pipeline, rotas e subida. Os detalhes de cada grupo ficam no *Setup da pasta dele.
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
 
+// 1. Serviços
 // Corpo de requisição de até 1 MB (o maior é o push: até 500 operações), o mesmo limite que o push declara.
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = SyncEndpoints.MaxPushBodyBytes);
-
-// Banco. A senha pode vir separada (POSTGRES_PASSWORD do .env), para a connection string não carregar segredo.
-var connection = new NpgsqlConnectionStringBuilder(config.GetConnectionString("Default")
-    ?? throw new InvalidOperationException("ConnectionStrings:Default não configurada."));
-if (string.IsNullOrEmpty(connection.Password) && config["POSTGRES_PASSWORD"] is { Length: > 0 } dbPassword)
-    connection.Password = dbPassword;
-builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(connection.ConnectionString));
-
-// Autenticação: JWT num cookie HttpOnly (o token não fica acessível ao JavaScript da página).
-var auth = AuthSettings.FromConfiguration(config, builder.Environment);
-builder.Services.AddSingleton(auth);
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton<TokenService>();
-builder.Services.AddSingleton<LoginTimingGuard>();
-builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
-builder.Services.AddCookieJwtAuthentication(auth);
-builder.Services.AddAuthorization();
-
-// IP real do cliente, aceito só de proxies confiáveis (Network:TrustedProxies); sem isso o limite de tentativas veria
-// todo mundo com o IP do proxy. A API confia num único salto, o nginx: é ele que resolve o IP real e o entrega em
-// X-Forwarded-For SUBSTITUINDO o cabeçalho (na VPS, a partir do CF-Connecting-IP, aceito só do cloudflared). Por
-// isso ForwardLimit = 1 basta e um X-Forwarded-For forjado pelo cliente nunca chega aqui.
-builder.Services.Configure<ForwardedHeadersOptions>(o =>
-{
-    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    o.ForwardLimit = 1;
-    foreach (var cidr in config.GetSection("Network:TrustedProxies").Get<string[]>() ?? [])
-        o.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(cidr));
-});
-
-// Limite de tentativas de login por IP, contra força bruta.
-var loginPermits = config.GetValue("Auth:LoginRateLimit:PermitLimit", 10);
-var loginWindow = TimeSpan.FromSeconds(config.GetValue("Auth:LoginRateLimit:WindowSeconds", 60));
-builder.Services.AddRateLimiter(o =>
-{
-    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    o.AddPolicy(AuthEndpoints.LoginRateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
-        http.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = loginPermits, Window = loginWindow, QueueLimit = 0 }));
-    // Cada cadastro de integração faz uma requisição do servidor para fora (o ping): limite por usuário, para a tela
-    // não virar um disparador de requisições para terceiros.
-    o.AddPolicy(IntegrationEndpoints.RegisterRateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
-        http.User.GetUser()?.Id.ToString() ?? http.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = config.GetValue("Webhooks:RegisterRateLimit:PermitLimit", 10),
-            Window = TimeSpan.FromSeconds(config.GetValue("Webhooks:RegisterRateLimit:WindowSeconds", 60)),
-            QueueLimit = 0,
-        }));
-});
-
-builder.Services.AddScoped<SyncService>();
-
-// Integração externa: proteção contra SSRF, cliente HTTP das entregas e worker do outbox.
-var allowPrivateNetworks = config.GetValue("Webhooks:AllowPrivateNetworks", false);
-builder.Services.AddSingleton(new NetworkGuard(allowPrivateNetworks));
-builder.Services.AddSingleton<WebhookHttp>();
-builder.Services.AddSingleton<WebhookSignal>();
-builder.Services.AddSingleton<WebhookDispatcher>();
-if (config.GetValue("Webhooks:WorkerEnabled", true))
-    builder.Services.AddHostedService<WebhookWorker>();
 builder.Services.AddProblemDetails();
-builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
+builder.Services.AddTrustedProxies(config);
+builder.Services.AddDatabase(config);
+builder.Services.AddAuth(config, builder.Environment);
+builder.Services.AddSync();
+builder.Services.AddWebhooks(config);
 
 var app = builder.Build();
+app.LogLocalOnlySettings();
 
-if (auth.SigningKeyGenerated)
-    app.Logger.LogWarning("Jwt:SigningKey não configurada: chave aleatória gerada; as sessões caem a cada reinício.");
-if (allowPrivateNetworks)
-    app.Logger.LogWarning("Webhooks:AllowPrivateNetworks ligado: integrações podem apontar para a rede interna (só no ambiente local).");
-
-app.UseForwardedHeaders();
+// 2. Pipeline (a ordem importa)
+app.UseForwardedHeaders(); // primeiro: o limite de tentativas precisa do IP real
 app.UseExceptionHandler();
-
-// Respostas da API nunca vão para cache (dados do usuário).
-app.Use(async (ctx, next) =>
-{
-    if (ctx.Request.Path.StartsWithSegments("/api"))
-    {
-        ctx.Response.OnStarting(() =>
-        {
-            ctx.Response.Headers.CacheControl = "no-store";
-            ctx.Response.Headers.XContentTypeOptions = "nosniff";
-            return Task.CompletedTask;
-        });
-    }
-    await next();
-});
-
+app.UseApiResponseHeaders();
 app.UseMiddleware<OriginCheckMiddleware>();
 app.UseAuthentication();
 app.UseRateLimiter(); // depois da autenticação: o limite do cadastro de integrações é por usuário
 app.UseAuthorization();
 
+// 3. Rotas
 app.MapHealthChecks("/health");
 app.MapAuthEndpoints();
 app.MapSyncEndpoints();
 app.MapIntegrationEndpoints();
 
-if (config.GetValue("Database:InitializeOnStartup", true))
-    await DatabaseInitializer.InitializeAsync(app.Services);
-
+// 4. Subida
+await app.InitializeDatabaseAsync();
 app.Run();
 
 public partial class Program;

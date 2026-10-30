@@ -9,7 +9,9 @@ uso de IA do plano.
 ## Estrutura
 
 - `src/Way2Do.Api/` — API ASP.NET Core (.NET 10, Minimal APIs, EF Core + Npgsql), organizada por funcionalidade
-  (`Auth/`, `Sync/`, `Webhooks/`, `Domain/`). `Webhooks:AllowPrivateNetworks` fica ligado só no
+  (`Auth/`, `Sync/`, `Webhooks/`, `Domain/`). O `Program.cs` é só o roteiro (serviços, pipeline, rotas, subida); a
+  configuração de cada área fica no `*Setup.cs` da pasta dela, e a que não é de nenhuma (proxies confiáveis,
+  cabeçalhos das respostas, avisos de configuração local) em `Hosting/`. `Webhooks:AllowPrivateNetworks` fica ligado só no
   `appsettings.Development.json` (integrações para `localhost` e para a rede do Compose).
 - `src/Way2Do.Consumer/` — consumidor externo simulado.
 - `src/web/` — frontend React + Vite + TypeScript (PWA, Dexie).
