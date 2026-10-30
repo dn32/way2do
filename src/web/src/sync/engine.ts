@@ -1,6 +1,6 @@
 import { liveQuery } from 'dexie'
-import { OfflineError } from '../api/auth'
-import { OtherUserError, pull, push, SessionExpiredError, type PullPage, type PushResult } from '../api/sync'
+import { OfflineError, OtherUserError, SessionExpiredError } from '../api/errors'
+import { pull, push, type PullPage, type PushResult } from '../api/sync'
 import type { PendingOp, UserDb } from '../data/db'
 import { currentSession } from '../data/session'
 import { applyPulledPage, applyPushResults, nextBatch, readCursor, writeStatus } from './store'

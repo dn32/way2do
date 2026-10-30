@@ -21,7 +21,10 @@ public sealed class AuthSettings
     /// <summary>Única definição da chave: usada para emitir e para validar o token.</summary>
     public required SymmetricSecurityKey SecurityKey { get; init; }
 
-    public SigningCredentials SigningCredentials => new(SecurityKey, SecurityAlgorithms.HmacSha256);
+    /// <summary>Único algoritmo aceito: o mesmo para emitir e para validar.</summary>
+    public const string Algorithm = SecurityAlgorithms.HmacSha256;
+
+    public SigningCredentials SigningCredentials => new(SecurityKey, Algorithm);
 
     /// <summary>Verdadeiro quando a chave foi gerada na subida (ambiente local sem chave configurada).</summary>
     public required bool SigningKeyGenerated { get; init; }

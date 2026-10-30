@@ -465,7 +465,7 @@ public sealed class WebhookTests(PostgresFixture postgres) : IAsyncLifetime
         await Dispatcher.RunOnceAsync(CancellationToken.None);
 
         var scheduled = await SubscriptionAsync(created.Id);
-        Assert.Equal(first.LastResyncAt + WebhookDispatcher.ResyncInterval, scheduled.ResyncDueAt);
+        Assert.Equal(first.LastResyncAt + WebhookSubscription.ResyncInterval, scheduled.ResyncDueAt);
         Assert.Single(_consumer.Requests, r => r.EventType == "todo.snapshot");
     }
 
@@ -482,7 +482,7 @@ public sealed class WebhookTests(PostgresFixture postgres) : IAsyncLifetime
 
         Assert.Single(_consumer.Requests, r => r.EventType == "todo.snapshot");
         var subscription = await SubscriptionAsync(created.Id);
-        Assert.Equal(subscription.LastResyncAt + WebhookDispatcher.ResyncInterval, subscription.ResyncDueAt);
+        Assert.Equal(subscription.LastResyncAt + WebhookSubscription.ResyncInterval, subscription.ResyncDueAt);
     }
 
     [Fact]
@@ -592,6 +592,21 @@ public sealed class WebhookTests(PostgresFixture postgres) : IAsyncLifetime
         Assert.Equal(0, await Dispatcher.RunOnceAsync(CancellationToken.None));
         await Task.Delay(TimeSpan.FromSeconds(4.5));
         Assert.Single(_consumer.Requests, r => r.Path.EndsWith("lento") && r.EventType == "todo.created");
+    }
+
+    [Fact]
+    public async Task Conferencia_na_conexao_barra_rede_interna_mesmo_depois_do_cadastro()
+    {
+        // Simula a troca de DNS depois do cadastro (DNS rebinding): a entrega aponta para um endereço interno e só a
+        // conferência feita no momento da conexão está entre ela e a rede interna.
+        using var http = new WebhookHttp(new NetworkGuard(allowPrivateNetworks: false));
+
+        var response = await http.PostAsync(_consumer.Url(), Guid.NewGuid(), "todo.updated", "{}", WebhookHttp.DeliveryTimeout,
+            CancellationToken.None);
+
+        Assert.False(response.Delivered);
+        Assert.Contains("rede interna", response.Error);
+        Assert.Empty(_consumer.Requests);
     }
 
     [Fact]

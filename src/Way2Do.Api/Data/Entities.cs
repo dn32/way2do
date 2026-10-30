@@ -77,7 +77,23 @@ public sealed class WebhookSubscription
     /// intervalo fica agendado para o fim dele, e pedidos repetidos se juntam neste mesmo horário.
     /// </summary>
     public DateTimeOffset? ResyncDueAt { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
+
+    /// <summary>No máximo um retrato completo por assinatura neste intervalo.</summary>
+    public static readonly TimeSpan ResyncInterval = TimeSpan.FromMinutes(1);
+
+    /// <summary>
+    /// Pede o retrato completo (cadastro ou consumidor que respondeu 205). Fica agendado para agora ou, se já houve
+    /// um no último minuto, para o fim do intervalo; pedidos repetidos se juntam no mesmo horário.
+    /// </summary>
+    public void RequestResync(DateTimeOffset now)
+    {
+        if (ResyncDueAt is not null)
+            return;
+        var earliest = LastResyncAt + ResyncInterval;
+        ResyncDueAt = earliest > now ? earliest : now;
+    }
 }
 
 public enum DeliveryStatus { Pending, Delivered, Failed }

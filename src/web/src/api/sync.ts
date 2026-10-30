@@ -1,16 +1,7 @@
 import type { PendingOp } from '../data/db'
 import type { Task } from '../domain/types'
-import { toLocalTask, UnexpectedResponseError } from '../sync/serverTask'
-import { OfflineError } from './auth'
-
-/** 401: o cookie expirou ou não vale mais. A sincronização pausa até um novo login; os dados locais ficam. */
-export class SessionExpiredError extends Error {}
-
-/** 409: o cookie é de outro usuário (outra aba trocou de conta). Nada é enviado nem gravado. */
-export class OtherUserError extends Error {}
-
-/** Há rede, mas o servidor respondeu com erro (5xx, 429, resposta fora do contrato). */
-export class ServerError extends Error {}
+import { OfflineError, OtherUserError, ServerError, SessionExpiredError } from './errors'
+import { toLocalTask, UnexpectedResponseError } from './serverTask'
 
 export interface PushResult {
   opId: string

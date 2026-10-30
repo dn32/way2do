@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { OfflineError } from './auth'
+import { OfflineError, SessionExpiredError } from './errors'
 import { IntegrationError, IntegrationNotFoundError, listIntegrations, registerIntegration, removeIntegration } from './integrations'
-import { SessionExpiredError } from './sync'
 
 const item = { id: '6f2f24a6-21f4-469f-b156-7afc6efa3280', url: 'https://c.example.com/…1234', dashboardUrl: 'https://c.example.com/v/ab', createdAt: '2026-10-29T10:00:00Z' }
 

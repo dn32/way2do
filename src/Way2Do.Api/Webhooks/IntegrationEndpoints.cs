@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Way2Do.Api.Auth;
@@ -44,11 +43,13 @@ public static class IntegrationEndpoints
     }
 
     private static async Task<IResult> Register(IntegrationRequest? request, ClaimsPrincipal principal, AppDbContext db,
-        NetworkGuard guard, WebhookHttp http, WebhookSignal signal, TimeProvider clock, ILogger<WebhookHttp> logger,
+        NetworkGuard guard, WebhookHttp http, WebhookSignal signal, TimeProvider clock, ILoggerFactory loggers,
         CancellationToken ct)
     {
         if (principal.GetUser() is not { } user)
             return Results.Unauthorized();
+
+        var logger = loggers.CreateLogger("Way2Do.Api.Webhooks.Integrations");
 
         // 1) Formato.
         var (uri, error) = WebhookUrl.Parse(request?.Url);
@@ -88,14 +89,13 @@ public static class IntegrationEndpoints
             Id = Guid.NewGuid(),
             UserId = user.Id,
             Url = url,
-            // Cabeçalho primeiro (único meio no 205, que não tem corpo); corpo JSON como alternativa no 200.
-            DashboardUrl = WebhookUrl.SafeDashboardUrl(ping.DashboardUrlHeader) ?? ReadDashboardUrl(ping.Body),
+            DashboardUrl = ping.ReadDashboardUrl(),
             CreatedAt = now,
         };
         // 5) Retrato completo para toda integração recém-cadastrada, com 200 ou 205: o 200 só diz que o espaço já
         // existe, não que ele tem as tarefas DESTE usuário (outro usuário na mesma URL, ou recadastro depois de
         // editar). O que o consumidor já tiver na mesma versão, ele descarta.
-        WebhookDispatcher.RequestResync(subscription, now);
+        subscription.RequestResync(now);
 
         db.WebhookSubscriptions.Add(subscription);
         try
@@ -119,25 +119,6 @@ public static class IntegrationEndpoints
             return Results.Unauthorized();
         var removed = await db.WebhookSubscriptions.Where(s => s.Id == id && s.UserId == user.Id).ExecuteDeleteAsync(ct);
         return removed == 0 ? Results.NotFound() : Results.NoContent();
-    }
-
-    private static string? ReadDashboardUrl(string? body)
-    {
-        if (string.IsNullOrWhiteSpace(body))
-            return null;
-        try
-        {
-            using var json = JsonDocument.Parse(body);
-            return json.RootElement.ValueKind == JsonValueKind.Object
-                && json.RootElement.TryGetProperty("dashboardUrl", out var value)
-                && value.ValueKind == JsonValueKind.String
-                ? WebhookUrl.SafeDashboardUrl(value.GetString())
-                : null;
-        }
-        catch (JsonException)
-        {
-            return null; // resposta sem JSON: consumidor sem painel
-        }
     }
 
     private static IResult Refused(string message, int status = StatusCodes.Status400BadRequest) =>

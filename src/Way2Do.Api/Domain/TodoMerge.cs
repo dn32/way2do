@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using Way2Do.Api.Data;
@@ -63,8 +64,6 @@ public static class TodoMerge
     public const string DueDate = "dueDate";
     public const string Priority = "priority";
     public const string Status = "status";
-
-    public static readonly IReadOnlyList<string> FieldNames = [Title, Description, DueDate, Priority, Status];
 
     public static MergeResult Apply(TodoItem target, TodoChange change, DateTimeOffset now)
     {
@@ -267,9 +266,9 @@ public static class TodoMerge
                     ? text
                     : throw new InvalidChangeException(name, "data no formato AAAA-MM-DD");
             case Priority:
-                return text is "low" or "medium" or "high" ? text : throw new InvalidChangeException(name, "low, medium ou high");
+                return TodoFormat.ParsePriority(text) is not null ? text : throw new InvalidChangeException(name, "low, medium ou high");
             case Status:
-                return text is "pending" or "done" ? text : throw new InvalidChangeException(name, "pending ou done");
+                return TodoFormat.ParseStatus(text) is not null ? text : throw new InvalidChangeException(name, "pending ou done");
             default:
                 throw new InvalidChangeException(name, "campo desconhecido");
         }
@@ -282,8 +281,10 @@ public static class TodoMerge
             case Title: t.Title = value!; break;
             case Description: t.Description = value; break;
             case DueDate: t.DueDate = value is null ? null : DateOnly.ParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture); break;
-            case Priority: t.Priority = Enum.Parse<TodoPriority>(value!, ignoreCase: true); break;
-            case Status: t.Status = Enum.Parse<TodoStatus>(value!, ignoreCase: true); break;
+            case Priority: t.Priority = TodoFormat.ParsePriority(value) ?? throw new InvalidChangeException(name, "low, medium ou high"); break;
+            case Status: t.Status = TodoFormat.ParseStatus(value) ?? throw new InvalidChangeException(name, "pending ou done"); break;
+            // Parse já recusou campo desconhecido; chegar aqui é um campo novo esquecido neste switch.
+            default: throw new UnreachableException($"campo sem atribuição: {name}");
         }
     }
 }

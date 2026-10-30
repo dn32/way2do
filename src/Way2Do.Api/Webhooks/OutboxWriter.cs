@@ -19,6 +19,16 @@ public static class OutboxWriter
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
+    /// <summary>
+    /// Tipo do evento de uma tarefa alterada num lote do push (contrato público), ou <c>null</c> quando não há evento:
+    /// nada visível mudou, ou a tarefa foi criada e excluída no mesmo lote (o consumidor nunca a viu).
+    /// </summary>
+    public static string? EventTypeFor(bool contentChanged, bool isNew, bool deletedBefore, bool deletedNow) =>
+        !contentChanged || (isNew && deletedNow) ? null
+        : isNew ? Created
+        : deletedNow && !deletedBefore ? Deleted
+        : Updated;
+
     public static async Task AddEventsAsync(AppDbContext db, Guid userId, string userName,
         IReadOnlyList<(TodoItem Task, string Type)> changes, DateTimeOffset now, CancellationToken ct)
     {

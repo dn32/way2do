@@ -3,16 +3,17 @@ using System.Text.Json;
 namespace Way2Do.Consumer.Spaces;
 
 /// <summary>
-/// Páginas e o estado do painel. O painel é somente leitura quanto aos dados; a única ação é o modo de falha, que
-/// muda só o comportamento deste consumidor (recurso de demonstração).
+/// Páginas do consumidor: a inicial (com a geração de um par de URLs), o CSS da marca e o painel de cada espaço com
+/// o estado dele. O painel é somente leitura quanto aos dados; a única ação é o modo de falha, que muda só o
+/// comportamento deste consumidor (recurso de demonstração).
 /// </summary>
-public static class DashboardEndpoints
+public static class PageEndpoints
 {
     private const string HtmlType = "text/html; charset=utf-8";
 
     public sealed record FailureModeRequest(string? Mode);
 
-    public static void MapDashboardEndpoints(this IEndpointRouteBuilder app)
+    public static void MapPageEndpoints(this IEndpointRouteBuilder app)
     {
         var brandCss = LoadBrandCss();
 
@@ -68,7 +69,7 @@ public static class DashboardEndpoints
             return Results.BadRequest(new { error = "mode deve ser off, down ou flaky" });
 
         space.SetFailureMode(mode);
-        return Results.Json(space.ToState().FailureMode);
+        return Results.Json(new { mode = Space.ModeCode(mode) }); // a página relê o estado em seguida
     }
 
     private static IResult Page(IWebHostEnvironment env, string name)
@@ -79,7 +80,7 @@ public static class DashboardEndpoints
 
     private static byte[] LoadBrandCss()
     {
-        using var stream = typeof(DashboardEndpoints).Assembly.GetManifestResourceStream("Way2Do.Consumer.way2do.css")
+        using var stream = typeof(PageEndpoints).Assembly.GetManifestResourceStream("Way2Do.Consumer.way2do.css")
             ?? throw new InvalidOperationException("CSS da marca (way2do.css) não embutido no assembly.");
         using var copy = new MemoryStream();
         stream.CopyTo(copy);

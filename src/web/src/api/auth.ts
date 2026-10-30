@@ -1,12 +1,10 @@
 import { UUID_PATTERN } from '../data/ids'
+import { OfflineError } from './errors'
 
 export interface User {
   id: string
   name: string
 }
-
-/** Sem conexão (ou servidor inalcançável): o login precisa de internet. */
-export class OfflineError extends Error {}
 
 export class InvalidCredentialsError extends Error {}
 

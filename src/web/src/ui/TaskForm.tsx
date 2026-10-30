@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
-import { InvalidChangeError, LIMITS, normalizeTag, visibleTags, type FieldName } from '../domain/merge'
+import { InvalidChangeError, LIMITS, normalizeTag, visibleTags } from '../domain/merge'
 import type { Priority, Task } from '../domain/types'
-import type { LocalEdit } from '../data/localTasks'
+import { diffEdit, type LocalEdit } from '../data/localTasks'
 import { PRIORITY_LABEL } from './format'
 import { CloseIcon, InfoIcon, TrashIcon } from './icons'
 import { Overlay } from './Overlay'
@@ -60,23 +60,6 @@ export function TaskForm({
     }
   }
 
-  function buildEdit(): LocalEdit {
-    const fields: Partial<Record<FieldName, string | null>> = {}
-    const desc = description.trim() ? description : null
-    const due = dueDate || null
-    if (task === null || title !== task.title) fields.title = title
-    if (task === null ? desc !== null : desc !== task.description) fields.description = desc
-    if (task === null ? due !== null : due !== task.dueDate) fields.dueDate = due
-    if (task === null || priority !== task.priority) fields.priority = priority
-
-    const before = new Set(task ? visibleTags(task) : [])
-    const after = new Set(tags)
-    const tagEdits: Record<string, boolean> = {}
-    for (const t of after) if (!before.has(t)) tagEdits[t] = true
-    for (const t of before) if (!after.has(t)) tagEdits[t] = false
-    return { fields, tags: tagEdits }
-  }
-
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (removed) return
@@ -86,7 +69,7 @@ export function TaskForm({
     }
     setSaving(true)
     try {
-      await onSave(buildEdit())
+      await onSave(diffEdit(task, { title, description, dueDate, priority, tags }))
     } catch (err) {
       if (err instanceof InvalidChangeError) {
         // Campos com lugar próprio mostram a mensagem ali; os demais, no aviso do topo.

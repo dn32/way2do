@@ -1,6 +1,6 @@
 import { UUID_PATTERN } from '../data/ids'
 import { FIELD_NAMES, setTag } from '../domain/merge'
-import type { FieldChange, Priority, Status, TagState, Task, TodoChange } from '../domain/types'
+import type { Priority, Status, TagState, Task } from '../domain/types'
 
 /** Resposta do servidor fora do contrato: tratada como erro do servidor, nunca gravada no banco local. */
 export class UnexpectedResponseError extends Error {}
@@ -43,16 +43,6 @@ export function toLocalTask(raw: unknown): Task {
     version: count(t.version, 'version'),
     changeSeq: count(t.changeSeq, 'changeSeq'),
   }
-}
-
-/** O estado do servidor como alteração para o merge: cada campo com o horário da última mudança dele. */
-export function asChange(task: Task): TodoChange {
-  const fields: Record<string, FieldChange> = {}
-  for (const name of FIELD_NAMES) {
-    const ts = task.fieldTimestamps[name]
-    if (ts !== undefined) fields[name] = { value: task[name], ts }
-  }
-  return { fields, tags: task.tags, deletedAt: task.deletedAt, createdAt: task.createdAt }
 }
 
 function asObject(value: unknown, what: string): Record<string, unknown> {

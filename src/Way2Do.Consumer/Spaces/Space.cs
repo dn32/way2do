@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Way2Do.Consumer.Spaces;
 
 /// <summary>
@@ -67,16 +69,21 @@ public sealed class Space(string id, DateTimeOffset createdAt, SpaceLimits limit
     }
 
     /// <summary>
-    /// Aplica um evento já validado. <paramref name="snapshotRequested"/> indica que a resposta será 205 (o espaço
-    /// acabou de nascer): só conta o pedido de retrato; quem escolhe o código é o endpoint.
+    /// Aplica um evento já validado (<see cref="WebhookEvent.Validate"/>). <c>SnapshotRequested</c> é verdadeiro no
+    /// primeiro evento do espaço: espaço vazio (novo ou perdido num reinício) pede o retrato completo, e o endpoint
+    /// responde 205. Vale também quando esse primeiro evento é do próprio retrato (reinício no meio dele: o que veio
+    /// antes se perdeu); o Way2Do faz no máximo um retrato por minuto por integração, então isso não vira laço.
     /// </summary>
-    public IngestResult Apply(WebhookEvent evt, DateTimeOffset receivedAt, bool snapshotRequested)
+    public (IngestResult Result, bool SnapshotRequested) Apply(WebhookEvent evt, DateTimeOffset receivedAt)
     {
+        Debug.Assert(evt.Validate() is null, "Apply recebe só evento validado");
         var eventId = evt.EventId!.Value;
         var type = evt.Type!;
 
         lock (_gate)
         {
+            // Decidido dentro do lock: com vários primeiros eventos ao mesmo tempo, só um pede o retrato.
+            var snapshotRequested = _received == 0;
             _received++;
             _lastEventAt = receivedAt;
             var typeKey = EventTypes.IsKnown(type) ? type : EventTypes.Other;
@@ -114,7 +121,7 @@ public sealed class Space(string id, DateTimeOffset createdAt, SpaceLimits limit
             while (_recent.Count > SpaceLimits.RecentEvents)
                 _recent.Dequeue();
 
-            return result;
+            return (result, snapshotRequested);
         }
     }
 
@@ -226,14 +233,16 @@ public sealed class Space(string id, DateTimeOffset createdAt, SpaceLimits limit
         IngestResult.Stale => "stale",
         IngestResult.Ping => "ping",
         IngestResult.Ignored => "ignored",
-        _ => "limit",
+        IngestResult.LimitReached => "limit",
+        _ => throw new UnreachableException($"IngestResult sem código: {result}"),
     };
 
     public static string ModeCode(FailureMode mode) => mode switch
     {
+        FailureMode.Off => "off",
         FailureMode.Down => "down",
         FailureMode.Flaky => "flaky",
-        _ => "off",
+        _ => throw new UnreachableException($"FailureMode sem código: {mode}"),
     };
 
     public static FailureMode? ParseMode(string? code) => code switch

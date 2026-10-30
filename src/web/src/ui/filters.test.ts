@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyTask, type Task } from '../domain/types'
-import { activeFilterCount, filterTasks, NO_FILTERS, tagCounts } from './filters'
+import { activeFilterCount, filterTasks, groupTasks, NO_FILTERS, tagCounts } from './filters'
 
 function task(title: string, extra: Partial<Task> = {}): Task {
   return { ...emptyTask(crypto.randomUUID()), title, createdAt: '2026-10-29T10:00:00.000Z', ...extra }
@@ -30,5 +30,17 @@ describe('filtros e busca', () => {
       { name: 'obra', count: 2 },
       { name: 'cliente', count: 1 },
     ])
+  })
+
+  it('agrupa para a tela: excluídas fora, filtro aplicado à lista mas não às tags nem aos totais', () => {
+    const excluida = task('Apagada', { deletedAt: ts })
+    const g = groupTasks([galpao, laudo, epi, excluida], { ...NO_FILTERS, status: 'pending' })
+
+    expect(g.alive).toEqual([galpao, laudo, epi])
+    expect(g.visible.map((e) => e.task)).toEqual([galpao, epi]) // alta antes de baixa
+    expect(g.pending.length).toBe(2)
+    expect(g.done).toEqual([])
+    expect(g.totals).toEqual({ pending: 2, done: 1 })
+    expect(g.tags.map((t) => t.name)).toEqual(['obra', 'cliente'])
   })
 })

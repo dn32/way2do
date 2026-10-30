@@ -104,6 +104,18 @@ public sealed class NetworkGuardTests
         Assert.Equal(expected, WebhookUrl.SafeDashboardUrl(dashboard));
     }
 
+    [Theory]
+    [InlineData("https://h.example.com/v/1", null, "https://h.example.com/v/1")]
+    [InlineData(null, "{\"dashboardUrl\":\"https://b.example.com/v/2\"}", "https://b.example.com/v/2")]
+    [InlineData("https://h.example.com/v/1", "{\"dashboardUrl\":\"https://b.example.com/v/2\"}", "https://h.example.com/v/1")]
+    [InlineData("javascript:alert(1)", "{\"dashboardUrl\":\"https://b.example.com/v/2\"}", "https://b.example.com/v/2")]
+    [InlineData(null, "não é JSON", null)]
+    [InlineData(null, "{\"dashboardUrl\":\"javascript:alert(1)\"}", null)]
+    public void Link_do_painel_vem_do_cabecalho_e_depois_do_corpo_so_se_for_http(string? header, string? body, string? expected)
+    {
+        Assert.Equal(expected, new WebhookResponse(200, null, body, header).ReadDashboardUrl());
+    }
+
     [Fact]
     public void Backoff_dobra_ate_5_minutos_com_jitter()
     {

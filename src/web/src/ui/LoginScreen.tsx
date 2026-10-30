@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { InvalidCredentialsError, login, OfflineError, type User } from '../api/auth'
+import { InvalidCredentialsError, login, type User } from '../api/auth'
+import { OfflineError } from '../api/errors'
 import { CheckIcon, InfoIcon } from './icons'
 
 export function LoginScreen({ onLoggedIn }: { onLoggedIn: (user: User) => Promise<void> }) {

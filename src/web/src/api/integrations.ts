@@ -1,5 +1,4 @@
-import { OfflineError } from './auth'
-import { SessionExpiredError } from './sync'
+import { OfflineError, SessionExpiredError } from './errors'
 
 /** Integração como o servidor devolve: a URL de entrada vem mascarada (ela contém o token do consumidor). */
 export interface Integration {

@@ -60,15 +60,11 @@ public static class IngestEndpoints
         if (created)
             log.LogInformation("Espaço {Space} criado.", SpaceKeys.Short(spaceId));
 
-        // Espaço vazio (novo, ou perdido num reinício): pede o retrato completo. Vale também quando o primeiro evento
-        // é do retrato (reinício no meio dele: o que veio antes se perdeu). O Way2Do faz no máximo um retrato por
-        // minuto por integração, então isso não vira laço.
-        var snapshotRequested = created;
-        space.Apply(evt!, time.GetUtcNow(), snapshotRequested);
+        var (_, snapshotRequested) = space.Apply(evt!, time.GetUtcNow());
         var status = snapshotRequested ? StatusCodes.Status205ResetContent : StatusCodes.Status200OK;
 
-        // Modo "instável": processou, mas responde 503 (confirmação perdida). Um espaço recém-criado ainda está com o
-        // modo desligado; a condição só deixa explícito que o pedido de retrato (205) nunca se perde.
+        // Modo "instável": processou, mas responde 503 (confirmação perdida). O pedido de retrato (205) nunca se perde:
+        // o modo pode ser ligado entre a criação do espaço e o primeiro evento, e o reenvio já não pediria o retrato.
         if (!snapshotRequested && space.DropAcknowledgement())
             return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
 

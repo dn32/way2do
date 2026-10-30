@@ -1,15 +1,15 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { OfflineError } from '../api/auth'
-import { OtherUserError, pull, push, ServerError, SessionExpiredError, type PullPage, type PushResult } from '../api/sync'
+import { OfflineError, OtherUserError, ServerError, SessionExpiredError } from '../api/errors'
+import { toLocalTask } from '../api/serverTask'
+import { pull, push, type PullPage, type PushResult } from '../api/sync'
 import { sessionDb, UserDb, type PendingOp } from '../data/db'
 import { saveLocalEdit } from '../data/localTasks'
 import { startSession } from '../data/session'
 import { applyChange, InvalidChangeError } from '../domain/merge'
 import { emptyTask, type Task } from '../domain/types'
 import { backoffDelay, BACKOFF_MAX_MS, BACKOFF_MIN_MS, DEBOUNCE_MS, runCycle, startSync, type SyncApi } from './engine'
-import { indicatorKind } from './indicator'
-import { toLocalTask } from './serverTask'
+import { indicatorKind, isFirstSync } from './indicator'
 import { applyPulledPage, applyPushResults, MAX_OPS_PER_PUSH, nextBatch, readCursor, readRejections, readStatus } from './store'
 
 const T1 = '2026-10-28T10:00:00.000Z'
@@ -409,6 +409,20 @@ describe('indicador', () => {
     ['tudo enviado', { state: 'synced' as const, at }, 0, true, 'ok'],
   ])('%s', (_caso, status, pending, online, expected) => {
     expect(indicatorKind(status, pending, online)).toBe(expected)
+  })
+})
+
+describe('primeira sincronização', () => {
+  it.each([
+    [undefined, 'syncing', true],
+    [undefined, 'ok', true],
+    [undefined, 'pending', true],
+    [undefined, 'offline', false], // falhou: a lista abre e o indicador explica
+    [undefined, 'error', false],
+    [undefined, 'expired', false],
+    [12, 'syncing', false], // já houve pull completo neste aparelho
+  ] as const)('cursor %s, indicador %s → %s', (cursor, indicator, expected) => {
+    expect(isFirstSync(cursor, indicator)).toBe(expected)
   })
 })
 

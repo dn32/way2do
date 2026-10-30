@@ -1,8 +1,7 @@
 import type { PullPage, PushResult } from '../api/sync'
-import type { PendingOp, UserDb } from '../data/db'
-import { applyChange, InvalidChangeError } from '../domain/merge'
-import type { Task } from '../domain/types'
-import { asChange } from './serverTask'
+import { META_KEYS, type PendingOp, type UserDb } from '../data/db'
+import { applyChange, FIELD_NAMES, InvalidChangeError } from '../domain/merge'
+import type { FieldChange, Task, TodoChange } from '../domain/types'
 
 // O que o motor de sincronização grava no banco local do usuário. Cada passo é uma transação: um ciclo interrompido
 // (aba fechada, rede caiu) nunca deixa a fila, as tarefas e o cursor desencontrados.
@@ -35,23 +34,23 @@ const MAX_REJECTIONS_KEPT = 20
 const NO_CLAMP = '9999-12-31T23:59:59.999Z'
 
 export async function readCursor(db: UserDb): Promise<number | undefined> {
-  return (await db.meta.get('cursor'))?.value as number | undefined
+  return (await db.meta.get(META_KEYS.cursor))?.value as number | undefined
 }
 
 export async function readStatus(db: UserDb): Promise<SyncStatus | undefined> {
-  return (await db.meta.get('syncStatus'))?.value as SyncStatus | undefined
+  return (await db.meta.get(META_KEYS.syncStatus))?.value as SyncStatus | undefined
 }
 
 export async function writeStatus(db: UserDb, state: SyncState, now = new Date().toISOString()): Promise<void> {
-  await db.meta.put({ key: 'syncStatus', value: { state, at: now } satisfies SyncStatus })
+  await db.meta.put({ key: META_KEYS.syncStatus, value: { state, at: now } satisfies SyncStatus })
 }
 
 export async function readRejections(db: UserDb): Promise<Rejection[]> {
-  return ((await db.meta.get('rejections'))?.value as Rejection[] | undefined) ?? []
+  return ((await db.meta.get(META_KEYS.rejections))?.value as Rejection[] | undefined) ?? []
 }
 
 export async function clearRejections(db: UserDb): Promise<void> {
-  await db.meta.delete('rejections')
+  await db.meta.delete(META_KEYS.rejections)
 }
 
 /** Próximo lote da fila, em ordem: até 500 operações e abaixo do limite de tamanho do servidor. */
@@ -112,7 +111,7 @@ export async function applyPushResults(db: UserDb, sent: PendingOp[], results: P
 
     if (rejections.length > 0) {
       const kept = [...(await readRejections(db)), ...rejections].slice(-MAX_REJECTIONS_KEPT)
-      await db.meta.put({ key: 'rejections', value: kept })
+      await db.meta.put({ key: META_KEYS.rejections, value: kept })
     }
     return removed.length
   })
@@ -147,7 +146,7 @@ export async function applyPulledPage(db: UserDb, page: PullPage, now = new Date
       await db.tasks.put(merged)
     }
     const cursor = (await readCursor(db)) ?? 0
-    await db.meta.put({ key: 'cursor', value: Math.max(cursor, page.cursor) })
+    await db.meta.put({ key: META_KEYS.cursor, value: Math.max(cursor, page.cursor) })
   })
 }
 
@@ -162,4 +161,14 @@ function withQueuedEdits(server: Task, queued: PendingOp[], now: string): Task {
     }
   }
   return task
+}
+
+/** O estado do servidor como alteração para o merge: cada campo com o horário da última mudança dele. */
+export function asChange(task: Task): TodoChange {
+  const fields: Record<string, FieldChange> = {}
+  for (const name of FIELD_NAMES) {
+    const ts = task.fieldTimestamps[name]
+    if (ts !== undefined) fields[name] = { value: task[name], ts }
+  }
+  return { fields, tags: task.tags, deletedAt: task.deletedAt, createdAt: task.createdAt }
 }

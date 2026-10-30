@@ -128,8 +128,8 @@ subseções abaixo.
 | 7 | Integração externa e consumidor simulado | implementa a API de integrações e o worker; subagente faz o consumidor | revisão; COMMIT | ✅ `a7b50dc`, `f344fe7`, `3a42a48` |
 | 8 | Docker, Compose e VPS | escreve Dockerfiles e Compose; cria o túnel; revisão de marco | informa o domínio; autoriza o túnel; opera a VPS; revisão; COMMIT | ✅ `84e8e15` |
 | 9 | Aceitação ponta a ponta (skill `roteiro-demo`) | cria a skill; executa no navegador e no celular; corrige | disponibiliza o Android; revisão; COMMIT | ✅ `0792054` |
-| 10 | README final e conferência | escreve o README; faz a conferência completa; revisão final | revisa o README; revisão; COMMIT | ⏳ README e conferência feitos; aguardando a revisão do README e COMMIT |
-| 11 | Revisão do código pelos princípios SOLID | revisores independentes por área; corrige com os testes como rede de segurança | decide os achados que mudam a estrutura; revisão; COMMIT | ⬜ |
+| 10 | README final e conferência | escreve o README; faz a conferência completa; revisão final | revisa o README; revisão; COMMIT | ✅ `a1ae946` |
+| 11 | Revisão do código pelos princípios SOLID | revisores independentes por área; corrige com os testes como rede de segurança | decide os achados que mudam a estrutura; revisão; COMMIT | ⏳ achados avaliados e corrigidos; aguardando COMMIT |
 | 12 | Revisão contra o enunciado e as premissas | matriz de rastreabilidade (requisito → onde está atendido → como foi verificado); fecha as lacunas | decide as lacunas; revisão; COMMIT | ⬜ |
 | 13 | Entrega | confere repositório e VPS; ensaio final | libera o acesso; envia o e-mail com as credenciais | ⬜ |
 
@@ -398,6 +398,26 @@ subseções abaixo.
   COMMIT.
 - **Pronto quando**: nenhum achado em aberto; suítes verdes; o README e o escopo refletem qualquer mudança de
   estrutura.
+- **Como foi**: três revisores independentes (API, consumidor e frontend), com a instrução de só apontar o que
+  dificulta algo concreto. Nenhum achado pediu camada, projeto ou abstração nova; 21 achados no total, 18 aplicados
+  e 3 mantidos com justificativa (os `switch` do merge espelham o C#; os dois layouts diferem de propósito; a
+  pré-condição de `Apply` no consumidor tem um único chamador e ficou só com um `Debug.Assert`). Principais
+  mudanças:
+  - **frontend**: a tela principal foi dividida (diálogos e conteúdo da lista viraram componentes que só recebem
+    props), e as regras presas em componentes viraram funções puras com testes em tabela — `diffEdit` (enviar só o
+    que mudou, de que o merge por campo depende), `groupTasks` e `isFirstSync`. Erros em `api/errors.ts`, o parser
+    do contrato em `api/` (sem dependência circular com `sync/`) e o hook do navegador em `ui/`;
+  - **API**: tipo do evento do webhook como função pura (`OutboxWriter.EventTypeFor`); o laço do push separado do
+    roteiro da transação; conversão enum ↔ texto num lugar só, sem padrão silencioso (um valor novo falha em vez de
+    sair com o texto de outro); `dashboardUrl` lido pela própria resposta; regra do retrato na assinatura; JWT
+    configurado em `Auth/`; teste direto da conferência no momento da conexão (DNS rebinding);
+  - **consumidor**: `switch` com braços explícitos, a regra "espaço vazio ⇒ 205" decidida num lugar só, resposta
+    enxuta do modo de falha, `PageEndpoints` no lugar de `DashboardEndpoints`.
+  A verificação no navegador achou um problema que nenhuma revisão tinha visto: o aviso "Nova versão disponível"
+  ficava por cima dos painéis e bloqueava os botões deles; agora fica abaixo. A revisão de código do resultado achou
+  9 pontos, todos corrigidos; o mais importante, uma guarda do consumidor que a refatoração tinha removido como
+  redundante e que protegia o 205 de uma corrida (modo de falha ligado entre a criação do espaço e o primeiro
+  evento). Testes: 237 na API (eram 219), 80 no consumidor e 172 no frontend (eram 148).
 - **Commits**: `refactor: revisão pelos princípios SOLID` (um ou mais, por área).
 
 ### Etapa 12 — Revisão contra o enunciado e as premissas
@@ -463,7 +483,7 @@ Preenchido ao fim de cada etapa; vira a seção "Uso de inteligência artificial
 | 8 | Dockerfiles, Compose, nginx; teste em pasta limpa; consulta dos domínios, túnel e DNS pelo MCP da Cloudflare; implantação na VPS por SSH com segredos gerados lá; verificação por HTTPS no navegador; revisões com correção dos achados | escolha do domínio; autorização do túnel e da VPS; revisão; COMMIT |
 | 9 | skill `roteiro-demo`; execução no navegador (três perfis, local e VPS) e num Android real pelo MCP mobile + adb; correção do roteiro onde ele falhou | Android conectado e desbloqueado; revisão; COMMIT |
 | 10 | README final a partir do escopo e do registro; conferência completa (clone limpo, auditoria de pacotes, segredos no histórico, Mermaid); revisão final por revisor independente | revisão do README; COMMIT |
-| 11 | | |
+| 11 | revisores independentes por área; avaliação de cada achado contra o critério sem super-engenharia; refatoração apoiada nos testes, com testes novos para as regras que ficaram puras; verificação no navegador | liberação da etapa ("continue"); COMMIT pendente |
 | 12 | | |
 
 ---

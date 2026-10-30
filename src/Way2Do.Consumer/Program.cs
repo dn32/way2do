@@ -38,7 +38,7 @@ app.Use(async (ctx, next) =>
 
 app.UseStaticFiles();
 app.MapIngestEndpoints();
-app.MapDashboardEndpoints();
+app.MapPageEndpoints();
 
 app.Run();
 

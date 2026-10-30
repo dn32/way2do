@@ -1,10 +1,8 @@
 using System.Net;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Way2Do.Api.Auth;
 using Way2Do.Api.Data;
@@ -14,8 +12,8 @@ using Way2Do.Api.Webhooks;
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
 
-// Corpo de requisição de até 1 MB (o maior é o push: até 500 operações).
-builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 1024 * 1024);
+// Corpo de requisição de até 1 MB (o maior é o push: até 500 operações), o mesmo limite que o push declara.
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = SyncEndpoints.MaxPushBodyBytes);
 
 // Banco. A senha pode vir separada (POSTGRES_PASSWORD do .env), para a connection string não carregar segredo.
 var connection = new NpgsqlConnectionStringBuilder(config.GetConnectionString("Default")
@@ -31,35 +29,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddSingleton<LoginTimingGuard>();
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(o =>
-    {
-        o.MapInboundClaims = false;
-        o.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidIssuer = AuthSettings.Issuer,
-            ValidAudience = AuthSettings.Audience,
-            IssuerSigningKey = auth.SecurityKey,
-            ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromMinutes(1),
-        };
-        // Lê o token só do cookie da sessão. Sem cookie, encerra aqui: senão o handler procuraria o token no
-        // cabeçalho Authorization, que não é aceito.
-        o.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = ctx =>
-            {
-                var token = ctx.Request.Cookies[auth.CookieName];
-                if (string.IsNullOrEmpty(token))
-                    ctx.NoResult();
-                else
-                    ctx.Token = token;
-                return Task.CompletedTask;
-            },
-        };
-    });
+builder.Services.AddCookieJwtAuthentication(auth);
 builder.Services.AddAuthorization();
 
 // IP real do cliente, aceito só de proxies confiáveis (Network:TrustedProxies); sem isso o limite de tentativas veria

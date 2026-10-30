@@ -62,7 +62,8 @@ public static class TodoOrdering
         {
             TodoPriority.High => 0,
             TodoPriority.Medium => 1,
-            _ => 2,
+            TodoPriority.Low => 2,
+            _ => throw new System.Diagnostics.UnreachableException($"TodoPriority sem posição: {priority}"),
         };
     }
 }

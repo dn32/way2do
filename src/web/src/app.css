@@ -201,13 +201,14 @@ body,
   margin: 4px 0 6px;
   padding-left: 18px;
 }
-/* "Nova versão disponível": acima da barra inferior do celular, no canto no desktop */
+/* "Nova versão disponível": acima da barra inferior do celular, no canto no desktop. Fica abaixo dos painéis e
+   diálogos (.layer, z-index 50): com um deles aberto, o aviso não pode cobrir os botões dele. */
 .update-toast {
   position: fixed;
   left: 16px;
   right: 16px;
   bottom: calc(88px + env(safe-area-inset-bottom));
-  z-index: 60;
+  z-index: 40;
   border-radius: 12px;
 }
 @media (min-width: 900px) {

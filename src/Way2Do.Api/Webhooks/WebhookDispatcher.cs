@@ -42,9 +42,6 @@ public sealed class WebhookDispatcher(IServiceScopeFactory scopes, WebhookHttp h
     public static readonly TimeSpan MaxBackoff = TimeSpan.FromMinutes(5);
     public static readonly TimeSpan RetryWindow = TimeSpan.FromHours(24);
 
-    /// <summary>No máximo um retrato completo por assinatura neste intervalo.</summary>
-    public static readonly TimeSpan ResyncInterval = TimeSpan.FromMinutes(1);
-
     // Assinaturas com envio em andamento: ficam fora da próxima reserva até terminar (a ordem dentro delas se mantém).
     private readonly ConcurrentDictionary<Guid, Task> _sending = new();
 
@@ -84,18 +81,6 @@ public sealed class WebhookDispatcher(IServiceScopeFactory scopes, WebhookHttp h
             .MinAsync(d => (DateTimeOffset?)d.NextAttemptAt, ct);
         var resync = await db.WebhookSubscriptions.MinAsync(s => s.ResyncDueAt, ct);
         return delivery is null ? resync : resync is null ? delivery : delivery < resync ? delivery : resync;
-    }
-
-    /// <summary>
-    /// Pedido de retrato completo (o consumidor respondeu 205). Fica agendado para agora ou, se já houve um no último
-    /// minuto, para o fim do intervalo; pedidos repetidos se juntam no mesmo horário.
-    /// </summary>
-    public static void RequestResync(WebhookSubscription subscription, DateTimeOffset now)
-    {
-        if (subscription.ResyncDueAt is not null)
-            return;
-        var earliest = subscription.LastResyncAt + ResyncInterval;
-        subscription.ResyncDueAt = earliest > now ? earliest : now;
     }
 
     /// <summary>Espera antes da próxima tentativa: 1 s, 2 s, 4 s… até 5 min, com jitter (entre a metade e o total).</summary>
@@ -227,7 +212,7 @@ public sealed class WebhookDispatcher(IServiceScopeFactory scopes, WebhookHttp h
             // dele). O limite de um retrato por minuto, com pedidos agrupados, impede o laço.
             if (response.WantsSnapshot
                 && await db.WebhookSubscriptions.SingleOrDefaultAsync(s => s.Id == claimed.SubscriptionId, ct) is { } subscription)
-                RequestResync(subscription, now);
+                subscription.RequestResync(now);
         }
         else if (now - claimed.CreatedAt >= RetryWindow)
         {

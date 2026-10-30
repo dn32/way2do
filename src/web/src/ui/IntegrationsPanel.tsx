@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { OfflineError } from '../api/auth'
+import { OfflineError, SessionExpiredError } from '../api/errors'
 import { IntegrationError, IntegrationNotFoundError, listIntegrations, registerIntegration, removeIntegration, type Integration } from '../api/integrations'
-import { SessionExpiredError } from '../api/sync'
-import { useBrowserOnline } from '../sync/indicator'
 import { AlertIcon, CheckIcon, ExternalLinkIcon, RefreshIcon, TrashIcon, WifiOffIcon } from './icons'
 import { Overlay } from './Overlay'
+import { useBrowserOnline } from './useBrowserOnline'
 
 type Status = { kind: 'testing' | 'ok' | 'bad'; text: string }
 

@@ -13,6 +13,9 @@ export interface PendingOp {
   queuedAt: string
 }
 
+/** Chaves da tabela `meta`: o cursor do pull, o estado do último ciclo e as recusas ainda não dispensadas. */
+export const META_KEYS = { cursor: 'cursor', syncStatus: 'syncStatus', rejections: 'rejections' } as const
+
 export interface MetaEntry {
   key: string
   value: unknown

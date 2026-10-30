@@ -1,5 +1,5 @@
 import { logout as logoutRequest, type User } from '../api/auth'
-import { sessionDb, userDb } from './db'
+import { META_KEYS, sessionDb, userDb } from './db'
 
 export async function currentSession(): Promise<User | null> {
   const session = await sessionDb.session.get('current')
@@ -11,7 +11,7 @@ export async function currentSession(): Promise<User | null> {
  * o estado "Sessão expirada" gravado no banco do usuário deixa de valer (o próximo ciclo grava o atual).
  */
 export async function startSession(user: User): Promise<void> {
-  await userDb(user.id).meta.delete('syncStatus')
+  await userDb(user.id).meta.delete(META_KEYS.syncStatus)
   await sessionDb.transaction('rw', sessionDb.session, sessionDb.flags, async () => {
     await sessionDb.session.put({ key: 'current', userId: user.id, name: user.name })
     await sessionDb.flags.delete('pendingLogout')

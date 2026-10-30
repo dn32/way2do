@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Way2Do.Api.Domain;
+
 namespace Way2Do.Api.Data;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
@@ -35,8 +37,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(t => t.Id).ValueGeneratedNever();
             e.Property(t => t.Title).HasMaxLength(200);
             e.Property(t => t.Description).HasMaxLength(4000);
-            e.Property(t => t.Priority).HasConversion(LowercaseEnum<TodoPriority>()).HasMaxLength(16);
-            e.Property(t => t.Status).HasConversion(LowercaseEnum<TodoStatus>()).HasMaxLength(16);
+            // Mesmo texto do contrato público (TodoFormat), para o banco e o webhook nunca divergirem.
+            e.Property(t => t.Priority)
+                .HasConversion(v => TodoFormat.Priority(v), v => TodoFormat.PriorityFromDb(v))
+                .HasMaxLength(16);
+            e.Property(t => t.Status)
+                .HasConversion(v => TodoFormat.Status(v), v => TodoFormat.StatusFromDb(v))
+                .HasMaxLength(16);
             e.Property(t => t.Tags).HasColumnType("jsonb").HasConversion(JsonConverter<Dictionary<string, TagState>>(), DictionaryComparer<TagState>());
             e.Property(t => t.FieldTimestamps).HasColumnType("jsonb").HasConversion(JsonConverter<Dictionary<string, DateTimeOffset>>(), DictionaryComparer<DateTimeOffset>());
             // Novo valor da sequência a cada INSERT (default) e a cada UPDATE (trigger tasks_next_change_seq, na

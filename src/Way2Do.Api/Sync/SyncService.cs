@@ -61,58 +61,11 @@ public sealed class SyncService(AppDbContext db, TimeProvider clock, WebhookSign
             .ToList();
         var tasks = await db.Tasks.Where(t => ids.Contains(t.Id)).ToDictionaryAsync(t => t.Id, ct);
 
-        var outcomes = new List<Outcome>(operations.Count);
+        // Laço explícito, em ordem: cada operação altera as tarefas carregadas e o registro do que mudou no lote.
         var touched = new Dictionary<Guid, Touched>();
-
+        var outcomes = new List<Outcome>(operations.Count);
         for (var i = 0; i < operations.Count; i++)
-        {
-            var (op, error) = parsed[i];
-            if (error is not null)
-            {
-                var opId = op?.OpId ?? PushOperationReader.IdOrEmpty(operations[i], "opId");
-                var taskId = op?.TaskId ?? PushOperationReader.IdOrEmpty(operations[i], "taskId");
-                outcomes.Add(Outcome.Reject(opId, taskId, "operation", error, null));
-                continue;
-            }
-
-            var task = tasks.GetValueOrDefault(op!.TaskId);
-
-            // Tarefa de outro usuário: recusada sem nenhum dado dela na resposta.
-            if (task is not null && task.UserId != userId)
-            {
-                outcomes.Add(Outcome.Reject(op.OpId, op.TaskId, "taskId", "tarefa não encontrada", null));
-                continue;
-            }
-
-            var isNew = task is null;
-            task ??= new TodoItem { Id = op.TaskId, UserId = userId, Title = "" };
-            var deletedBefore = task.DeletedAt is not null;
-
-            MergeResult merge;
-            try
-            {
-                merge = TodoMerge.Apply(task, op.ToChange(), now);
-            }
-            catch (InvalidChangeException e)
-            {
-                // O merge valida tudo antes de escrever: a tarefa não foi alterada.
-                outcomes.Add(Outcome.Reject(op.OpId, op.TaskId, e.Field, e.Reason, isNew ? null : task));
-                continue;
-            }
-
-            if (merge.Changed)
-            {
-                if (isNew)
-                {
-                    db.Tasks.Add(task);
-                    tasks[task.Id] = task;
-                }
-                touched[task.Id] = touched.TryGetValue(task.Id, out var seen)
-                    ? seen with { ContentChanged = seen.ContentChanged || merge.ContentChanged }
-                    : new Touched(task, isNew, deletedBefore, merge.ContentChanged);
-            }
-            outcomes.Add(Outcome.Accept(op.OpId, op.TaskId));
-        }
+            outcomes.Add(ApplyOperation(parsed[i], operations[i], userId, tasks, touched, now));
 
         // Uma nova versão por tarefa alterada no lote, mesmo que várias operações tenham mexido nela.
         foreach (var t in touched.Values.Where(t => t.ContentChanged))
@@ -120,10 +73,9 @@ public sealed class SyncService(AppDbContext db, TimeProvider clock, WebhookSign
         await db.SaveChangesAsync(ct); // change_seq vem do banco (default no INSERT, trigger no UPDATE)
 
         var events = touched.Values
-            .Where(t => t.ContentChanged && !(t.IsNew && t.Task.DeletedAt is not null)) // criada e excluída no lote: o consumidor nunca a viu
-            .Select(t => (t.Task, Type: t.IsNew ? OutboxWriter.Created
-                : t.Task.DeletedAt is not null && !t.DeletedBefore ? OutboxWriter.Deleted
-                : OutboxWriter.Updated))
+            .Select(t => (t.Task, Type: OutboxWriter.EventTypeFor(t.ContentChanged, t.IsNew, t.DeletedBefore, t.Task.DeletedAt is not null)))
+            .Where(e => e.Type is not null)
+            .Select(e => (e.Task, e.Type!))
             .ToList();
         await OutboxWriter.AddEventsAsync(db, userId, userName, events, now, ct);
         await db.SaveChangesAsync(ct);
@@ -135,6 +87,56 @@ public sealed class SyncService(AppDbContext db, TimeProvider clock, WebhookSign
         // Recusas trazem o estado ao fim do lote (com versão e change_seq gravados), não um estado intermediário.
         // Uma tarefa nova recusada que nenhuma outra operação criou não existe no servidor: estado nulo.
         return new PushResponse(outcomes.Select(o => o.ToResult(tasks, userId)).ToList());
+    }
+
+    /// <summary>
+    /// Decide uma operação do lote: recusa (malformada, de outro dono ou inválida no merge) ou aplica sobre a tarefa
+    /// carregada (ou nova), registrando em <paramref name="touched"/> o que precisa de versão e evento no fim do lote.
+    /// </summary>
+    private Outcome ApplyOperation((PushOperation? Operation, string? Error) parsed, JsonElement raw, Guid userId,
+        Dictionary<Guid, TodoItem> tasks, Dictionary<Guid, Touched> touched, DateTimeOffset now)
+    {
+        var (op, error) = parsed;
+        if (error is not null)
+        {
+            var opId = op?.OpId ?? PushOperationReader.IdOrEmpty(raw, "opId");
+            var taskId = op?.TaskId ?? PushOperationReader.IdOrEmpty(raw, "taskId");
+            return Outcome.Reject(opId, taskId, "operation", error, null);
+        }
+
+        var task = tasks.GetValueOrDefault(op!.TaskId);
+
+        // Tarefa de outro usuário: recusada sem nenhum dado dela na resposta.
+        if (task is not null && task.UserId != userId)
+            return Outcome.Reject(op.OpId, op.TaskId, "taskId", "tarefa não encontrada", null);
+
+        var isNew = task is null;
+        task ??= new TodoItem { Id = op.TaskId, UserId = userId, Title = "" };
+        var deletedBefore = task.DeletedAt is not null;
+
+        MergeResult merge;
+        try
+        {
+            merge = TodoMerge.Apply(task, op.ToChange(), now);
+        }
+        catch (InvalidChangeException e)
+        {
+            // O merge valida tudo antes de escrever: a tarefa não foi alterada.
+            return Outcome.Reject(op.OpId, op.TaskId, e.Field, e.Reason, isNew ? null : task);
+        }
+
+        if (merge.Changed)
+        {
+            if (isNew)
+            {
+                db.Tasks.Add(task);
+                tasks[task.Id] = task;
+            }
+            touched[task.Id] = touched.TryGetValue(task.Id, out var seen)
+                ? seen with { ContentChanged = seen.ContentChanged || merge.ContentChanged }
+                : new Touched(task, isNew, deletedBefore, merge.ContentChanged);
+        }
+        return Outcome.Accept(op.OpId, op.TaskId);
     }
 
     /// <summary>Alterações do usuário com <c>change_seq</c> maior que o cursor, em ordem, incluindo excluídas.</summary>

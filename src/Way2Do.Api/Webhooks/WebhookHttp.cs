@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 
 namespace Way2Do.Api.Webhooks;
 
@@ -55,6 +56,32 @@ public sealed record WebhookResponse(int? StatusCode, string? Error, string? Bod
 
     /// <summary>205 Reset Content: entregue, e o consumidor pede o retrato completo.</summary>
     public bool WantsSnapshot => StatusCode == (int)HttpStatusCode.ResetContent;
+
+    /// <summary>
+    /// Link do painel informado na resposta ao ping, só se for http/https: o cabeçalho primeiro (único meio no 205,
+    /// que não tem corpo); no 200, também o corpo <c>{ "dashboardUrl": "..." }</c>.
+    /// </summary>
+    /// <remarks>Método, e não propriedade: o <c>ToString</c> do record (logs) não deve ler o corpo.</remarks>
+    public string? ReadDashboardUrl() => WebhookUrl.SafeDashboardUrl(DashboardUrlHeader) ?? DashboardUrlFromBody(Body);
+
+    private static string? DashboardUrlFromBody(string? body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+            return null;
+        try
+        {
+            using var json = JsonDocument.Parse(body);
+            return json.RootElement.ValueKind == JsonValueKind.Object
+                && json.RootElement.TryGetProperty("dashboardUrl", out var value)
+                && value.ValueKind == JsonValueKind.String
+                ? WebhookUrl.SafeDashboardUrl(value.GetString())
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null; // resposta sem JSON: consumidor sem painel
+        }
+    }
 }
 
 /// <summary>

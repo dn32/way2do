@@ -1,4 +1,3 @@
-import { useSyncExternalStore } from 'react'
 import type { SyncStatus } from './store'
 
 export type IndicatorKind = 'offline' | 'pending' | 'syncing' | 'ok' | 'error' | 'expired'
@@ -15,15 +14,10 @@ export function indicatorKind(status: SyncStatus | undefined, pending: number, b
   return pending > 0 ? 'pending' : 'ok'
 }
 
-function subscribe(onChange: () => void): () => void {
-  window.addEventListener('online', onChange)
-  window.addEventListener('offline', onChange)
-  return () => {
-    window.removeEventListener('online', onChange)
-    window.removeEventListener('offline', onChange)
-  }
-}
-
-export function useBrowserOnline(): boolean {
-  return useSyncExternalStore(subscribe, () => navigator.onLine, () => true)
+/**
+ * Primeira sincronização neste aparelho (nenhum pull completo ainda): a lista mostra "Carregando suas tarefas…" em
+ * vez de "Nenhuma tarefa ainda", a menos que a tentativa já tenha falhado (aí a lista abre e o indicador explica).
+ */
+export function isFirstSync(cursor: number | undefined, indicator: IndicatorKind): boolean {
+  return cursor === undefined && (indicator === 'syncing' || indicator === 'ok' || indicator === 'pending')
 }
