@@ -130,7 +130,7 @@ subseções abaixo.
 | 9 | Aceitação ponta a ponta (skill `roteiro-demo`) | cria a skill; executa no navegador e no celular; corrige | disponibiliza o Android; revisão; COMMIT | ✅ `0792054` |
 | 10 | README final e conferência | escreve o README; faz a conferência completa; revisão final | revisa o README; revisão; COMMIT | ✅ `a1ae946` |
 | 11 | Revisão do código pelos princípios SOLID | revisores independentes por área; corrige com os testes como rede de segurança | decide os achados que mudam a estrutura; revisão; COMMIT | ✅ `86fe4b5` |
-| 12 | Revisão contra o enunciado e as premissas | matriz de rastreabilidade (requisito → onde está atendido → como foi verificado); fecha as lacunas | decide as lacunas; revisão; COMMIT | ⏳ matriz pronta, lacunas fechadas; aguardando COMMIT |
+| 12 | Revisão contra o enunciado e as premissas | matriz de rastreabilidade (requisito → onde está atendido → como foi verificado); fecha as lacunas | decide as lacunas; revisão; COMMIT | ✅ `ab2b154` |
 | 13 | Entrega | confere repositório e VPS; ensaio final | libera o acesso; envia o e-mail com as credenciais | ⬜ |
 
 ### Etapa 0 — Documentação e revisão
@@ -493,7 +493,7 @@ Preenchido ao fim de cada etapa; vira a seção "Uso de inteligência artificial
 | 9 | skill `roteiro-demo`; execução no navegador (três perfis, local e VPS) e num Android real pelo MCP mobile + adb; correção do roteiro onde ele falhou | Android conectado e desbloqueado; revisão; COMMIT |
 | 10 | README final a partir do escopo e do registro; conferência completa (clone limpo, auditoria de pacotes, segredos no histórico, Mermaid); revisão final por revisor independente | revisão do README; COMMIT |
 | 11 | revisores independentes por área; avaliação de cada achado contra o critério sem super-engenharia; refatoração apoiada nos testes, com testes novos para as regras que ficaram puras; verificação no navegador | liberação da etapa ("continue"); COMMIT |
-| 12 | matriz de rastreabilidade a partir do enunciado e do código; conferência de cada citação; passos novos no roteiro, executados no navegador | liberação da etapa ("Continue"); revisão; COMMIT pendente |
+| 12 | matriz de rastreabilidade a partir do enunciado e do código; conferência de cada citação; passos novos no roteiro, executados no navegador | liberação da etapa ("Continue"); revisão; COMMIT |
 
 ---
 
