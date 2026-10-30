@@ -125,6 +125,9 @@ desktop.ini
 # Enunciado do processo seletivo
 docs/desafio-tecnico-todo-list-offline-first.pdf
 
+# Material de estudo para a apresentação (pessoal)
+docs/estudos/
+
 # Credenciais (enviadas por e-mail, nunca versionadas)
 credenciais*
 *.local.md
