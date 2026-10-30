@@ -21,7 +21,20 @@ Arquitetura e diagramas: [docs/arquitetura.md](docs/arquitetura.md) · Escopo de
   [Node.js 22+](https://nodejs.org/).
 
 ### Passo a passo
-> _Em construção._
+1. Clone o repositório e entre na pasta.
+2. Crie o arquivo de configuração a partir do modelo: `cp .env.example .env` (no Windows: `copy .env.example .env`).
+3. Preencha no `.env` as três variáveis obrigatórias: `POSTGRES_PASSWORD` (qualquer valor),
+   `Seed__Users__Ana__Password` e `Seed__Users__Bruno__Password` (as senhas enviadas por e-mail ou as suas).
+4. Suba tudo: `docker compose up --build`. Na primeira vez o build leva alguns minutos; a aplicação está pronta
+   quando os quatro serviços aparecem como `healthy` em `docker compose ps`.
+5. Abra http://localhost:5300 e entre com `ana` ou `bruno`.
+
+Para ver a integração externa: abra http://localhost:5200, clique em **Gerar nova URL**, copie a **URL de entrada**
+(`http://consumer:8080/in/…`, o endereço que a API enxerga dentro do Docker), cadastre-a na tela **Integrações** do
+Way2Do e use o link **Abrir painel**.
+
+As portas 5300, 5200 e 5433 precisam estar livres. `docker compose down` para tudo e mantém os dados (volume do
+Postgres); `docker compose down -v` apaga também os dados.
 
 ### Usuários de teste
 Os usuários `ana` e `bruno` são criados automaticamente na primeira subida, com as senhas definidas no `.env`.
@@ -39,10 +52,22 @@ definir as próprias no `.env`.
 No modo de desenvolvimento (`dotnet run` e `npm run dev`), a API responde também direto em http://localhost:5100.
 
 ### Instância de demonstração
-> _Em construção: endereços da aplicação e do consumidor na VPS (as credenciais vão por e-mail)._
+| Serviço | URL |
+|---|---|
+| Aplicação | https://way2do.startbit.com.br |
+| Consumidor simulado | https://way2do-consumer.startbit.com.br |
+
+As senhas de `ana` e `bruno` vão por e-mail. Na instância de demonstração, a URL de entrada gerada pelo consumidor
+é a pública (`https://way2do-consumer.startbit.com.br/in/…`): o webhook sai da API, passa pela internet e volta,
+como chegaria a um sistema externo de verdade. HTTPS permite instalar o app e usá-lo offline num celular real.
 
 ### Testes
-> _Em construção._
+```bash
+dotnet test Way2Do.slnx               # API (sobe um Postgres próprio em container; precisa do Docker) e consumidor
+cd src/web && npm ci && npm test      # frontend: domínio com os casos compartilhados, banco local, sincronização
+```
+As regras que existem nos dois lados (urgência, ordenação, merge e identidade das tags) são testadas contra os
+mesmos casos, em `tests/fixtures/*.json`.
 
 ### Roteiro de demonstração
 > _Em construção: regra urgente, offline no DevTools e num celular Android, sincronização, conflito entre aparelhos

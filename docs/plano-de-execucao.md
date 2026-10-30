@@ -125,8 +125,8 @@ subseções abaixo.
 | 4 | Sincronização no servidor | implementa push e pull com testes de integração; revisão de marco | revisão; COMMIT | ✅ `2ee7b8d` |
 | 5 | Frontend base | implementa as telas e o banco local; confere no navegador | valida o visual; revisão; COMMIT | ✅ `ff6818e` |
 | 6 | Motor de sincronização e PWA | implementa fila, sync, indicador e Service Worker; testa offline; revisão de marco | revisão; COMMIT | ✅ `67c2ccd` |
-| 7 | Integração externa e consumidor simulado | implementa a API de integrações e o worker; subagente faz o consumidor | revisão; COMMIT | ⏳ implementada, testada e revisada; aguardando COMMIT |
-| 8 | Docker, Compose e VPS | escreve Dockerfiles e Compose; cria o túnel; revisão de marco | informa o domínio; autoriza o túnel; opera a VPS; revisão; COMMIT | ⬜ |
+| 7 | Integração externa e consumidor simulado | implementa a API de integrações e o worker; subagente faz o consumidor | revisão; COMMIT | ✅ `a7b50dc`, `f344fe7`, `3a42a48` |
+| 8 | Docker, Compose e VPS | escreve Dockerfiles e Compose; cria o túnel; revisão de marco | informa o domínio; autoriza o túnel; opera a VPS; revisão; COMMIT | ⏳ implantada e verificada; revisão e COMMIT |
 | 9 | Aceitação ponta a ponta (skill `roteiro-demo`) | cria a skill; executa no navegador e no celular; corrige | disponibiliza o Android; revisão; COMMIT | ⬜ |
 | 10 | README final e conferência | escreve o README; faz a conferência completa; revisão final | revisa o README; revisão; COMMIT | ⬜ |
 | 11 | Entrega | confere repositório e VPS; ensaio final | libera o acesso; envia o e-mail com as credenciais | ⬜ |
@@ -319,6 +319,21 @@ subseções abaixo.
 - **Pronto quando**: `docker compose up --build` numa pasta limpa sobe tudo seguindo só o README;
   `https://way2do.<domínio>` e `https://way2do-consumer.<domínio>` funcionando; cabeçalhos de cache e segurança
   conferidos.
+- **Como foi**: Dockerfiles sem root, Compose local com healthchecks e portas só em `127.0.0.1`, nginx com as regras
+  de cache e a CSP sem nada inline (o único `style` inline do app virou classe). Teste em pasta limpa, só com o
+  README: build, banco novo, usuários criados, login e consumidor. O Marcelo escolheu o domínio
+  (`startbit.com.br`) e liberou o acesso à VPS por SSH; a IA consultou os domínios e criou o túnel e os dois
+  hostnames pelo MCP da Cloudflare, conferiu antes que nada colidia e inspecionou a VPS sem alterar nada fora do
+  projeto. Segredos: senha do Postgres e chave do JWT geradas na VPS; senhas da demo e token do túnel
+  enviados por stdin, sem aparecer em comando nem saída. Verificado por HTTPS: cabeçalhos de cache e segurança
+  passando pela Cloudflare, HTTP redirecionando, integração pela URL pública do consumidor, app abrindo offline.
+  Um ajuste veio da verificação: a Cloudflare injetava o script do Web Analytics, bloqueado pela CSP;
+  `no-transform` impede a reescrita sem mexer na configuração da zona, que atende outros sites. Revisão de código:
+  9 achados, 6 corrigidos (segredo em subpasta entrando na imagem, 404 em cache por um ano, login recusado por
+  127.0.0.1, cabeçalhos de IP e protocolo aceitos do cliente no local, reinício automático na máquina do avaliador,
+  detalhes da VPS no CLAUDE.md versionado, que foram para a memória do projeto); os outros 3 eram estilo
+  (Dockerfiles parecidos, curl para o healthcheck, ENV redundante, removido). Revisão de segurança: nenhum achado;
+  a observação de higiene (origem do local valendo na VPS) foi aplicada.
 - **Commits**: `feat(infra): Docker, Compose local e implantação na VPS`.
 
 ### Etapa 9 — Aceitação ponta a ponta
@@ -384,7 +399,7 @@ Preenchido ao fim de cada etapa; vira a seção "Uso de inteligência artificial
 | 5 | implementação do frontend a partir do design aprovado; domínio em TS com paridade testada; verificação no navegador; revisões de código e de segurança com correção de todos os achados; checagem de mutação | liberação da etapa ("próxima"); validação do visual; COMMIT |
 | 6 | motor de sincronização e PWA; testes com servidor em memória; verificação offline no navegador com dois perfis; revisão de marco (código e segurança) com correção dos achados; checagem de mutação | liberação da etapa ("continue"); COMMIT pendente |
 | 7 | API de integrações e worker; tela de Integrações; subagente em worktree para o consumidor (a partir do contrato), revisado e integrado pela sessão principal; verificação ponta a ponta no navegador; revisões com correção dos achados | liberação da etapa ("continue"); decisão sobre o retrato completo (manter várias pessoas na mesma URL e mandar o retrato em todo cadastro); COMMIT |
-| 8 | | |
+| 8 | Dockerfiles, Compose, nginx; teste em pasta limpa; consulta dos domínios, túnel e DNS pelo MCP da Cloudflare; implantação na VPS por SSH com segredos gerados lá; verificação por HTTPS no navegador; revisões com correção dos achados | escolha do domínio; autorização do túnel e da VPS; revisão; COMMIT |
 | 9 | | |
 | 10 | | |
 

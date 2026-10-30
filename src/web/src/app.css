@@ -246,3 +246,9 @@ body,
   flex-direction: column;
   gap: 8px;
 }
+
+/* Ícone do estado vazio (sem estilo inline: a CSP de produção não aceita) */
+.ico-empty {
+  width: 40px;
+  height: 40px;
+}

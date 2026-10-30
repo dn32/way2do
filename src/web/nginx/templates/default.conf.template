@@ -1,0 +1,73 @@
+# nginx do serviço "web": serve o build do frontend e encaminha /api para a API (mesma origem, sem CORS).
+# Regras de cache e cabeçalhos: escopo, seção 10.
+# Modelo processado pelo envsubst da imagem na subida: ${REAL_IP_FROM} e ${PUBLIC_SCHEME} vêm do Compose (local e
+# VPS diferem). Só variáveis definidas no ambiente são trocadas; as do nginx ($uri etc.) ficam intactas.
+
+server {
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+    server_tokens off;
+
+    # O maior corpo da API é o push (até 1 MB); a API aplica o mesmo limite.
+    client_max_body_size 1m;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json application/manifest+json image/svg+xml;
+
+    # IP real do cliente: aceita CF-Connecting-IP só de ${REAL_IP_FROM}. Na VPS, a rede interna do Docker, onde o
+    # único caminho até aqui é o cloudflared (nenhuma porta publicada). No local, ninguém (o pedido chega pelo gateway
+    # do Docker e não há cloudflared). O nginx SUBSTITUI o X-Forwarded-For enviado à API por esse IP, então um
+    # X-Forwarded-For forjado pelo cliente nunca chega lá.
+    set_real_ip_from ${REAL_IP_FROM};
+    real_ip_header CF-Connecting-IP;
+
+    # Resolve "api" a cada 10 s pelo DNS do Docker: a API pode reiniciar com outro IP sem derrubar o nginx.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
+    include /etc/nginx/snippets/security-headers.conf;
+
+    # API: a própria API define Cache-Control: no-store (dados do usuário).
+    location /api/ {
+        set $api_upstream http://api:8080;
+        proxy_pass $api_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        # Fixo por ambiente (https na VPS, atrás da Cloudflare): o valor enviado pelo cliente não é repassado.
+        proxy_set_header X-Forwarded-Proto ${PUBLIC_SCHEME};
+        proxy_read_timeout 30s;
+        # A API já envia nosniff; sem isto o cabeçalho sairia duplicado.
+        proxy_hide_header X-Content-Type-Options;
+    }
+
+    # Nomes com hash gerados pelo Vite: mudam a cada build, podem ficar em cache para sempre.
+    # Sem "always": um 404 aqui não pode ficar em cache por um ano.
+    location /assets/ {
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+
+    # Service Worker e manifesto: o navegador precisa revalidar para detectar a versão nova.
+    location ~ ^/(sw\.js|workbox-[^/]+\.js)$ {
+        try_files $uri =404;
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+
+    location = /manifest.webmanifest {
+        types { application/manifest+json webmanifest; }
+        try_files $uri =404;
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+
+    # index.html, rotas da SPA e demais arquivos da raiz (ícones): sempre revalida. no-transform: a Cloudflare não
+    # reescreve o HTML (ex.: injetar o script do Web Analytics, que a CSP bloquearia, ou o Rocket Loader).
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache, no-transform" always;
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+}

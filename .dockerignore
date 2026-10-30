@@ -1,0 +1,25 @@
+# Contexto de build é a raiz do repositório (o frontend e o consumidor usam docs/design/way2do.css).
+# Nada de segredo, dependência instalada ou saída de build local entra nas imagens.
+.git/
+**/.env
+**/.env.*
+!.env.example
+**/credenciais*
+**/*.local.md
+**/*.local.json
+**/appsettings.Local.json
+**/secrets.json
+**/*.pem
+**/*.pfx
+**/*.key
+.claude/
+.playwright-mcp/
+.vs/
+.vscode/
+.idea/
+**/bin/
+**/obj/
+**/node_modules/
+src/web/dist/
+tests/
+docs/*.pdf

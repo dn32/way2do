@@ -1,5 +1,8 @@
-# Execução local. Os serviços da API, do consumidor e do frontend entram na etapa 8.
-# Variáveis obrigatórias vêm do .env (copie de .env.example).
+# Execução local: docker compose up --build e abrir http://localhost:5300 (escopo, seção 10).
+# Variáveis obrigatórias vêm do .env (copie de .env.example). Portas publicadas só em 127.0.0.1: por padrão o Docker
+# publica em todas as interfaces e passa por cima do firewall do sistema.
+# Na VPS, este arquivo é combinado com docker-compose.vps.yml (sem portas publicadas, com o túnel da Cloudflare e
+# reinício automático; aqui não, para nada voltar sozinho e ocupar as portas na máquina de quem avalia).
 name: way2do
 
 services:
@@ -9,13 +12,80 @@ services:
       POSTGRES_DB: way2do
       POSTGRES_USER: way2do
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
-    # Só em 127.0.0.1: o Docker publica em todas as interfaces por padrão e passa por cima do firewall.
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U way2do -d way2do"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Way2Do.Api/Dockerfile
+    environment:
+      # "Local": chave do JWT opcional (gerada na subida se faltar; as sessões caem ao reiniciar a API).
+      ASPNETCORE_ENVIRONMENT: Local
+      ConnectionStrings__Default: Host=db;Port=5432;Database=way2do;Username=way2do
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      Seed__Users__Ana__Password: ${Seed__Users__Ana__Password:?defina Seed__Users__Ana__Password no .env}
+      Seed__Users__Bruno__Password: ${Seed__Users__Bruno__Password:?defina Seed__Users__Bruno__Password no .env}
+      Jwt__SigningKey: ${Jwt__SigningKey:-}
+      Auth__AllowedOrigins__0: http://localhost:5300
+      Auth__AllowedOrigins__1: http://127.0.0.1:5300
+      # http://localhost: cookie sem Secure (o Safari descarta cookie Secure recebido por HTTP).
+      Auth__SecureCookie: "false"
+      # Localmente o consumidor é http://consumer:8080, na rede do Docker.
+      Webhooks__AllowPrivateNetworks: "true"
+      # O nginx do "web" é o único proxy confiável: ele substitui o X-Forwarded-For pelo IP real.
+      Network__TrustedProxies__0: 10.0.0.0/8
+      Network__TrustedProxies__1: 172.16.0.0/12
+      Network__TrustedProxies__2: 192.168.0.0/16
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  consumer:
+    build:
+      context: .
+      dockerfile: src/Way2Do.Consumer/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # A API alcança o consumidor pela rede do Docker; o navegador, pela porta publicada.
+      Consumer__IngestBaseUrl: http://consumer:8080
+      Consumer__ViewBaseUrl: http://localhost:5200
+    ports:
+      - "127.0.0.1:5200:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  web:
+    build:
+      context: .
+      dockerfile: src/web/Dockerfile
+    environment:
+      # Local: nenhum vizinho confiável para informar o IP real (CF-Connecting-IP); protocolo http.
+      REAL_IP_FROM: 127.0.0.1/32
+      PUBLIC_SCHEME: http
+    ports:
+      - "127.0.0.1:5300:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
       interval: 5s
       timeout: 3s
       retries: 10

@@ -725,7 +725,18 @@ Dois cenários, a partir do mesmo conjunto de imagens Docker:
 - Portas publicadas **só em `127.0.0.1`** (ex.: `127.0.0.1:5433:5432`). O Docker, por padrão, publica em todas as
   interfaces e passa por cima do firewall do sistema (ex.: `ufw` no Linux): sem isso, o Postgres ficaria acessível
   na rede.
-- Containers rodam **sem root**: usuário `app` das imagens oficiais do ASP.NET e `nginx-unprivileged` no `web`.
+- Containers rodam **sem root**: usuário `app` das imagens oficiais do ASP.NET e `nginx-unprivileged` no `web`
+  (que por isso escuta na porta 8080 dentro da rede do Docker, publicada como `127.0.0.1:5300`).
+- A API sobe no ambiente `Local` (chave do JWT opcional), com cookie sem `Secure` (o Safari descarta cookie
+  `Secure` recebido por HTTP) e a liberação de rede privada ligada (o consumidor é `http://consumer:8080`). O
+  consumidor gera a URL de entrada com esse endereço interno e a do painel com `http://localhost:5200`.
+- O nginx é o único proxy em que a API confia (`Network:TrustedProxies` = faixas privadas do Docker, já que a API
+  não publica porta): ele substitui o `X-Forwarded-For` pelo IP real. Esse IP vem do `CF-Connecting-IP`, aceito
+  só de quem o Compose indicar (`REAL_IP_FROM`): na VPS, a rede interna, onde o único caminho até o nginx é o
+  `cloudflared`; no local, ninguém. O `X-Forwarded-Proto` também é fixo por ambiente (`PUBLIC_SCHEME`), nunca o
+  que o cliente mandar.
+- Reinício automático (`restart: unless-stopped`) só na VPS: na máquina de quem avalia, nada volta sozinho
+  ocupando as portas.
 
 ### Primeira execução (o que o avaliador precisa fazer)
 1. Copiar `.env.example` para `.env`.
@@ -750,7 +761,7 @@ Docker Compose puro na VPS, exposto pela internet via **Cloudflare Tunnel**:
 
   | Hostname | Destino no Compose | Para quê |
   |---|---|---|
-  | `way2do.<domínio>` | `http://web:80` | frontend e API (o nginx encaminha `/api`) |
+  | `way2do.<domínio>` | `http://web:8080` | frontend e API (o nginx encaminha `/api`) |
   | `way2do-consumer.<domínio>` | `http://consumer:8080` | página do consumidor simulado, para a demonstração |
 
 - O consumidor usa `way2do-consumer.<domínio>` (um nível) e não `consumer.way2do.<domínio>` (dois níveis): o
@@ -762,6 +773,10 @@ Docker Compose puro na VPS, exposto pela internet via **Cloudflare Tunnel**:
 - Trade-off: dependência da Cloudflare para o acesso externo. Em troca, nenhuma porta exposta e nenhuma gestão de
   certificado. Alternativas consideradas: Caddy com Let's Encrypt e nginx com certificado de origem da Cloudflare
   (ambos exigem as portas 80/443 livres na VPS).
+- Instância de demonstração: `way2do.startbit.com.br` e `way2do-consumer.startbit.com.br`, num túnel próprio
+  (`way2do`, configurado pela Cloudflare) e num projeto Compose próprio na VPS. O código chega à VPS como cópia dos
+  arquivos do repositório (sem credencial do GitHub na máquina); o `.env` de lá tem permissão 600, e a senha do
+  Postgres e a chave do JWT foram geradas na própria VPS.
 
 ### Controle de cache (nginx do `web`)
 Com a Cloudflare na frente e um Service Worker no navegador, há **três camadas de cache** (Cloudflare, cache HTTP
@@ -782,6 +797,9 @@ aparelhos, porque a Cloudflare guarda arquivos `.js` em cache por padrão, inclu
 - Atualização do app: quando um Service Worker novo é detectado, a UI mostra "nova versão disponível — atualizar".
   A troca não é automática, para não recarregar a página no meio de uma edição.
 - Recursos da Cloudflare que reescrevem JavaScript (ex.: Rocket Loader) devem ficar desligados para esse hostname.
+  Além disso, o HTML sai com `Cache-Control: no-cache, no-transform` (e o consumidor com `no-store,
+  no-transform`): a Cloudflare não modifica a página, por exemplo injetando o script do Web Analytics, que a CSP
+  bloquearia com erro no console.
 
 ### Cabeçalhos de segurança (nginx do `web` e consumidor)
 `Content-Security-Policy` restritiva (`default-src 'self'`; sem scripts inline; `frame-ancestors 'none'`),

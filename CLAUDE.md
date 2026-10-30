@@ -62,7 +62,8 @@ arquivo e mantenha os escapes visíveis: um caractere invisível muda o teste se
 Pré-requisito: `.env` na raiz (copiado de `.env.example` e preenchido; não versionado).
 
 ```bash
-docker compose up -d db                      # Postgres em 127.0.0.1:5433
+docker compose up --build                    # tudo em containers: app em http://localhost:5300
+docker compose up -d db                      # só o Postgres em 127.0.0.1:5433, para desenvolver
 dotnet build Way2Do.slnx
 dotnet test Way2Do.slnx                      # sobe um Postgres próprio em container (Testcontainers)
 

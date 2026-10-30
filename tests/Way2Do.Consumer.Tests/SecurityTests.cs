@@ -24,7 +24,7 @@ public sealed partial class SecurityTests(SharedConsumer consumer) : IClassFixtu
             Header(response, "Content-Security-Policy"));
         Assert.Equal("nosniff", Header(response, "X-Content-Type-Options"));
         Assert.Equal("no-referrer", Header(response, "Referrer-Policy"));
-        Assert.Equal("no-store", Header(response, "Cache-Control"));
+        Assert.Equal("no-store, no-transform", Header(response, "Cache-Control"));
     }
 
     [Fact]

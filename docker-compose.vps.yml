@@ -1,0 +1,48 @@
+# VPS: docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --build (escopo, seção 10).
+# Nenhuma porta publicada: o cloudflared abre uma conexão de SAÍDA até a Cloudflare, que termina o HTTPS e entrega o
+# tráfego pelo túnel (way2do.<domínio> → web:8080; way2do-consumer.<domínio> → consumer:8080).
+# Variáveis da VPS no .env: WAY2DO_HOST, CONSUMER_HOST, CLOUDFLARE_TUNNEL_TOKEN e Jwt__SigningKey (obrigatória).
+
+services:
+  db:
+    ports: !reset []
+    restart: unless-stopped
+
+  api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Jwt__SigningKey: "${Jwt__SigningKey:?defina Jwt__SigningKey no .env, obrigatória na VPS}"
+      Auth__AllowedOrigins__0: "https://${WAY2DO_HOST:?defina WAY2DO_HOST no .env, por exemplo way2do.exemplo.com}"
+      # Anula a segunda origem do local (o Compose mescla as variáveis): na VPS só vale a pública.
+      Auth__AllowedOrigins__1: ""
+      Auth__SecureCookie: "true"
+      # Na VPS o consumidor é cadastrado pela URL pública; rede interna fica bloqueada (SSRF).
+      Webhooks__AllowPrivateNetworks: "false"
+    restart: unless-stopped
+
+  consumer:
+    environment:
+      Consumer__IngestBaseUrl: "https://${CONSUMER_HOST:?defina CONSUMER_HOST no .env, por exemplo way2do-consumer.exemplo.com}"
+      Consumer__ViewBaseUrl: "https://${CONSUMER_HOST}"
+    ports: !reset []
+    restart: unless-stopped
+
+  web:
+    environment:
+      # Só a rede interna do Docker alcança o nginx (o cloudflared): o CF-Connecting-IP dela é confiável.
+      REAL_IP_FROM: 172.16.0.0/12
+      PUBLIC_SCHEME: https
+    ports: !reset []
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.9.1
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: "${CLOUDFLARE_TUNNEL_TOKEN:?defina CLOUDFLARE_TUNNEL_TOKEN no .env}"
+    depends_on:
+      web:
+        condition: service_healthy
+      consumer:
+        condition: service_healthy
+    restart: unless-stopped

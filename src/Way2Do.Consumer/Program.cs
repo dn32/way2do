@@ -29,7 +29,8 @@ app.Use(async (ctx, next) =>
         headers.ContentSecurityPolicy = "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
         headers.XContentTypeOptions = "nosniff";
         headers["Referrer-Policy"] = "no-referrer";
-        headers.CacheControl = "no-store";
+        // no-transform: a Cloudflare não reescreve a página (ex.: injetar script, que a CSP bloquearia).
+        headers.CacheControl = "no-store, no-transform";
         return Task.CompletedTask;
     });
     await next();
