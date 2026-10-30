@@ -70,8 +70,24 @@ As regras que existem nos dois lados (urgência, ordenação, merge e identidade
 mesmos casos, em `tests/fixtures/*.json`.
 
 ### Roteiro de demonstração
-> _Em construção: regra urgente, offline no DevTools e num celular Android, sincronização, conflito entre aparelhos
-> e consumidor recebendo os eventos._
+O roteiro da apresentação é também o teste de aceitação ponta a ponta, na skill
+[`roteiro-demo`](.claude/skills/roteiro-demo/SKILL.md), executada com o Claude Code no navegador (três perfis: dois
+"aparelhos" da mesma usuária e o painel do consumidor) e num celular Android real:
+
+1. Login, criar tarefas com tags e prioridade, filtros e busca sem acento.
+2. Regra urgente: "Urgente: …" sobe com o selo; "… não é urgente" desce; concluída vai para o fim.
+3. Offline: criar, editar, concluir e excluir sem rede; indicador "Offline · N pendentes"; recarregar a página sem
+   rede (o app abre pelo Service Worker).
+4. Volta da rede: sincronização automática; o outro aparelho recebe sozinho.
+5. Conflito: título alterado num aparelho e conclusão no outro, os dois offline → a tarefa fica concluída **e** com
+   o título novo nos dois.
+6. Isolamento: `bruno` não vê nada da `ana`.
+7. Integração: gerar a URL no consumidor, cadastrar na tela Integrações, abrir o painel pelo link, ver o retrato e
+   as alterações chegando; modo instável (reentregas descartadas como duplicadas), fora do ar e recuperação;
+   reiniciar o consumidor e ver o 205 repor tudo.
+8. Celular (Android, contra a instância de demonstração): instalar a PWA, ligar o modo avião, fechar o app e o
+   navegador, **reabrir sem rede**, criar uma tarefa urgente e concluir outra, desligar o modo avião e ver as
+   alterações chegarem ao navegador do desktop e ao painel do consumidor.
 
 ---
 

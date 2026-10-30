@@ -126,8 +126,8 @@ subseções abaixo.
 | 5 | Frontend base | implementa as telas e o banco local; confere no navegador | valida o visual; revisão; COMMIT | ✅ `ff6818e` |
 | 6 | Motor de sincronização e PWA | implementa fila, sync, indicador e Service Worker; testa offline; revisão de marco | revisão; COMMIT | ✅ `67c2ccd` |
 | 7 | Integração externa e consumidor simulado | implementa a API de integrações e o worker; subagente faz o consumidor | revisão; COMMIT | ✅ `a7b50dc`, `f344fe7`, `3a42a48` |
-| 8 | Docker, Compose e VPS | escreve Dockerfiles e Compose; cria o túnel; revisão de marco | informa o domínio; autoriza o túnel; opera a VPS; revisão; COMMIT | ⏳ implantada e verificada; revisão e COMMIT |
-| 9 | Aceitação ponta a ponta (skill `roteiro-demo`) | cria a skill; executa no navegador e no celular; corrige | disponibiliza o Android; revisão; COMMIT | ⬜ |
+| 8 | Docker, Compose e VPS | escreve Dockerfiles e Compose; cria o túnel; revisão de marco | informa o domínio; autoriza o túnel; opera a VPS; revisão; COMMIT | ✅ `84e8e15` |
+| 9 | Aceitação ponta a ponta (skill `roteiro-demo`) | cria a skill; executa no navegador e no celular; corrige | disponibiliza o Android; revisão; COMMIT | ⏳ roteiro ✅ local, VPS e celular; aguardando COMMIT |
 | 10 | README final e conferência | escreve o README; faz a conferência completa; revisão final | revisa o README; revisão; COMMIT | ⬜ |
 | 11 | Entrega | confere repositório e VPS; ensaio final | libera o acesso; envia o e-mail com as credenciais | ⬜ |
 
@@ -344,6 +344,19 @@ subseções abaixo.
 - **Marcelo**: deixar um Android disponível para o MCP mobile (seção 6); revisão; COMMIT.
 - **Pronto quando**: roteiro inteiro ✅ nos dois ambientes **e no celular**, com screenshots — inclusive o app
   abrindo sem rede no Android e as alterações feitas em modo avião chegando ao servidor e ao consumidor.
+- **Como foi**: a skill `roteiro-demo` foi escrita a partir do roteiro do escopo, com um esperado objetivo por passo
+  e os trechos de Playwright reutilizáveis, e executada três vezes: local (Compose), VPS e celular. Local e VPS:
+  todos os passos ✅ (CRUD, filtros, regra urgente, offline com recarga sem rede, volta da rede com o outro
+  aparelho recebendo sozinho, conflito por campo, isolamento do bruno, integração com retrato, ao vivo em ~30 ms
+  do servidor ao painel, modo instável com duplicados descartados, fora do ar e recuperação, reinício do
+  consumidor com 205). Celular: POCO F7 (Android 16) por USB, contra a VPS — PWA instalada (WebAPK), modo avião
+  pelo `adb`, app e Chrome encerrados e **reaberto sem rede** com os dados, tarefa urgente criada e outra
+  concluída offline (confirmado que nada chegou ao servidor antes), modo avião desligado e as alterações no
+  desktop e no painel. Nenhum defeito do app apareceu; o que falhou foi o próprio roteiro, corrigido na skill:
+  a busca do passo 2 procurava uma palavra que só existia na tag (a busca cobre título e descrição), a
+  preparação não esperava o primeiro ciclo para detectar sessão antiga, e no celular um toque por coordenada
+  numa tela ainda carregando caiu num atalho do Chrome (nada foi digitado fora do app; a skill agora exige
+  tocar pela referência do elemento) e o `adb` não digita "·". O Marcelo conectou o Android e o desbloqueou.
 - **Commits**: `test: roteiro de aceitação ponta a ponta`.
 
 ### Etapa 10 — README final e conferência
@@ -400,7 +413,7 @@ Preenchido ao fim de cada etapa; vira a seção "Uso de inteligência artificial
 | 6 | motor de sincronização e PWA; testes com servidor em memória; verificação offline no navegador com dois perfis; revisão de marco (código e segurança) com correção dos achados; checagem de mutação | liberação da etapa ("continue"); COMMIT pendente |
 | 7 | API de integrações e worker; tela de Integrações; subagente em worktree para o consumidor (a partir do contrato), revisado e integrado pela sessão principal; verificação ponta a ponta no navegador; revisões com correção dos achados | liberação da etapa ("continue"); decisão sobre o retrato completo (manter várias pessoas na mesma URL e mandar o retrato em todo cadastro); COMMIT |
 | 8 | Dockerfiles, Compose, nginx; teste em pasta limpa; consulta dos domínios, túnel e DNS pelo MCP da Cloudflare; implantação na VPS por SSH com segredos gerados lá; verificação por HTTPS no navegador; revisões com correção dos achados | escolha do domínio; autorização do túnel e da VPS; revisão; COMMIT |
-| 9 | | |
+| 9 | skill `roteiro-demo`; execução no navegador (três perfis, local e VPS) e num Android real pelo MCP mobile + adb; correção do roteiro onde ele falhou | Android conectado e desbloqueado; revisão; COMMIT |
 | 10 | | |
 
 ---
