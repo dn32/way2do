@@ -98,9 +98,10 @@ sequenceDiagram
         API->>API: merge LWW por campo<br/>(exclusão vence, timestamp futuro limitado)
         API->>API: valida o resultado (regras e limites)
         alt houve mudança efetiva
-            API->>PG: grava tarefa (version+1, novo changeSeq)<br/>+ evento no outbox + entregas
+            API->>PG: grava tarefa (novo changeSeq)
         end
     end
+    API->>PG: version+1 uma vez por tarefa alterada no lote<br/>+ evento no outbox + entregas
     API->>PG: COMMIT
     API-->>S: resultado por operação<br/>(recusada → estado do servidor)
     S->>DB: remove ops da fila<br/>(recusada: substitui a cópia local e avisa o usuário)
@@ -120,12 +121,12 @@ stateDiagram-v2
     [*] --> Sincronizado
     Sincronizado --> Pendente: alteração local
     Pendente --> Sincronizando: gatilho de sync (debounce/timer/online)
-    Sincronizado --> Sincronizando: timer periódico / app em foco
+    Sincronizado --> Sincronizado: pull periódico ou app em foco (o indicador não muda)
     Sincronizando --> Sincronizado: push e pull ok, fila vazia
     Sincronizando --> Pendente: ok, mas novas alterações durante o ciclo
     Sincronizando --> Offline: falha de rede (backoff)
     Offline --> Sincronizando: evento online / nova tentativa
-    Sincronizando --> Erro: servidor respondeu 5xx (backoff)
+    Sincronizando --> Erro: servidor respondeu erro, 5xx, 4xx ou resposta inválida (backoff)
     Erro --> Sincronizando: nova tentativa
     Sincronizando --> SessaoExpirada: 401
     SessaoExpirada --> Sincronizando: novo login
@@ -164,16 +165,14 @@ sequenceDiagram
     API->>API: limite de 10 assinaturas e de tentativas
     API->>API: resolve o host e recusa IP privado,<br/>loopback ou link-local (anti-SSRF)
     API->>C: POST webhook.ping (sem seguir redirecionamento, timeout 5 s)
-    alt 205 (espaço vazio) ou 200
-        C-->>API: 200/205 + { dashboardUrl }
+    alt 200 ou 205 (205 = espaço novo)
+        C-->>API: 2xx + cabeçalho X-Way2Do-Dashboard-Url<br/>(o 205 não pode ter corpo)
         API->>API: aceita dashboardUrl só se http/https
-        API->>PG: grava assinatura (+ dashboardUrl)
-        opt resposta foi 205
-            API->>PG: enfileira 1 todo.snapshot por tarefa do usuário
-        end
+        API->>PG: grava assinatura (+ dashboardUrl)<br/>e agenda o retrato completo
         API-->>UI: 201 Created (link "abrir painel")
-    else erro, timeout, 3xx ou 404
-        API-->>UI: 422 com o motivo (assinatura não é gravada)
+        Note over PG,C: o worker envia 1 todo.snapshot por tarefa do usuário,<br/>em todo cadastro (o 200 não garante que o consumidor<br/>já tem as tarefas deste usuário)
+    else erro, timeout, 3xx, 4xx ou rede interna
+        API-->>UI: 400/409/429 com o motivo (assinatura não é gravada)
     end
 ```
 
@@ -199,7 +198,7 @@ sequenceDiagram
         C->>C: descarta eventId repetido<br/>aplica só se version > atual
         C-->>W: 200 OK
         W->>PG: delivery = delivered
-    else 205 (consumidor reiniciou e o espaço está vazio)
+    else 205 (consumidor reiniciou e o espaço está vazio, vale também durante um retrato)
         C-->>W: 205 Reset Content
         W->>PG: delivery = delivered<br/>+ agenda retrato completo (máx. 1 por minuto por assinatura)
     else falha (rede, timeout, 3xx, 4xx, 5xx)

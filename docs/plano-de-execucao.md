@@ -127,9 +127,11 @@ subseções abaixo.
 | 6 | Motor de sincronização e PWA | implementa fila, sync, indicador e Service Worker; testa offline; revisão de marco | revisão; COMMIT | ✅ `67c2ccd` |
 | 7 | Integração externa e consumidor simulado | implementa a API de integrações e o worker; subagente faz o consumidor | revisão; COMMIT | ✅ `a7b50dc`, `f344fe7`, `3a42a48` |
 | 8 | Docker, Compose e VPS | escreve Dockerfiles e Compose; cria o túnel; revisão de marco | informa o domínio; autoriza o túnel; opera a VPS; revisão; COMMIT | ✅ `84e8e15` |
-| 9 | Aceitação ponta a ponta (skill `roteiro-demo`) | cria a skill; executa no navegador e no celular; corrige | disponibiliza o Android; revisão; COMMIT | ⏳ roteiro ✅ local, VPS e celular; aguardando COMMIT |
-| 10 | README final e conferência | escreve o README; faz a conferência completa; revisão final | revisa o README; revisão; COMMIT | ⬜ |
-| 11 | Entrega | confere repositório e VPS; ensaio final | libera o acesso; envia o e-mail com as credenciais | ⬜ |
+| 9 | Aceitação ponta a ponta (skill `roteiro-demo`) | cria a skill; executa no navegador e no celular; corrige | disponibiliza o Android; revisão; COMMIT | ✅ `0792054` |
+| 10 | README final e conferência | escreve o README; faz a conferência completa; revisão final | revisa o README; revisão; COMMIT | ⏳ README e conferência feitos; aguardando a revisão do README e COMMIT |
+| 11 | Revisão do código pelos princípios SOLID | revisores independentes por área; corrige com os testes como rede de segurança | decide os achados que mudam a estrutura; revisão; COMMIT | ⬜ |
+| 12 | Revisão contra o enunciado e as premissas | matriz de rastreabilidade (requisito → onde está atendido → como foi verificado); fecha as lacunas | decide as lacunas; revisão; COMMIT | ⬜ |
+| 13 | Entrega | confere repositório e VPS; ensaio final | libera o acesso; envia o e-mail com as credenciais | ⬜ |
 
 ### Etapa 0 — Documentação e revisão
 - **Entregas**: `escopo.md`, `arquitetura.md`, este plano, esqueleto do README, `CLAUDE.md`, `.gitignore`,
@@ -367,9 +369,55 @@ subseções abaixo.
 - **Marcelo**: revisar o README (é a peça de comunicação avaliada); revisão; COMMIT.
 - **Revisão de marco**: revisão final completa (código + documentos), achados corrigidos.
 - **Pronto quando**: checklist inteiro ✅.
+- **Como foi**: README com as quatro partes do enunciado (decisões cobrindo os seis temas pedidos), premissas,
+  limitações com o próximo passo de cada uma, bibliotecas, testes e uso de IA. Conferência: clone do GitHub numa pasta
+  limpa seguindo só o README (Compose, login, tarefa urgente, integração entregando no painel, e os comandos de teste
+  do README: 219 + 80 + 148 testes); `dotnet list package --vulnerable` sem nada; `npm audit` sem nada no que vai
+  para o navegador (4 avisos baixos no `deepmerge`, só do build); histórico do git sem senha, token ou chave nos 17
+  commits; os 5 diagramas Mermaid validados pelo parser oficial (que pegou um `;` introduzido na atualização do
+  diagrama de cadastro). Revisão final: um revisor independente confrontou cada afirmação do README e dos
+  diagramas com o código e achou 16 divergências, todas de texto e todas corrigidas. As mais sérias: o Compose local
+  libera a rede interna e o cookie sai sem `Secure` (o README não dizia); qualquer resposta fora de 2xx gera nova
+  tentativa, não só 5xx; a negação da regra urgente é mais estreita do que o texto sugeria; e faltava declarar que a
+  sincronização roda com o app aberto. O diagrama de estados também mostrava o pull periódico mudando o indicador,
+  o que o código evita de propósito. A pedido do Marcelo, o plano ganhou duas etapas antes da entrega: revisão
+  pelos princípios SOLID (11) e revisão contra o enunciado e as premissas (12).
 - **Commits**: `docs: README final`.
 
-### Etapa 11 — Entrega
+### Etapa 11 — Revisão do código pelos princípios SOLID
+- **Entregas**: revisão de todo o código (API, consumidor e frontend) pelos cinco princípios — responsabilidade
+  única, aberto/fechado, substituição de Liskov, segregação de interfaces e inversão de dependência — e as
+  correções que tiverem ganho real. O critério é o do enunciado e do escopo: **sem super-engenharia**. Um princípio
+  justifica mudança quando o código atual dificulta entender, testar ou alterar algo concreto; interface ou camada
+  nova só entra com essa justificativa. Cada achado termina corrigido ou com o motivo de não mudar.
+- **IA**: revisores independentes por área (subagentes, para a leitura não vir ancorada em quem escreveu), com
+  achado, arquivo, princípio, impacto concreto e proposta; a sessão principal avalia, corrige e refatora apoiada
+  nos testes (todas as suítes verdes antes e depois de cada mudança; verificação no navegador quando tocar a
+  interface; trecho do `roteiro-demo` quando tocar sincronização ou integração).
+- **Marcelo**: decidir os achados que mudam a estrutura (ex.: separar projetos, introduzir abstrações); revisão;
+  COMMIT.
+- **Pronto quando**: nenhum achado em aberto; suítes verdes; o README e o escopo refletem qualquer mudança de
+  estrutura.
+- **Commits**: `refactor: revisão pelos princípios SOLID` (um ou mais, por área).
+
+### Etapa 12 — Revisão contra o enunciado e as premissas
+- **Entregas**: matriz de rastreabilidade em `docs/rastreabilidade.md`, ligando cada item do enunciado aos pontos
+  onde ele é atendido e a como foi verificado:
+  - requisitos de negócio e funcionais (1 a 8, item a item, inclusive "a regra urgente vale offline" e "propaga só
+    depois de reconciliar no servidor");
+  - restrições técnicas (backend .NET, justificativa do frontend, infraestrutura justificada);
+  - fora de escopo (confirmar que nada exigido ficou de fora por engano);
+  - entregáveis (código, diagramas com os três fluxos, README com as quatro partes e os seis temas, testes);
+  - critérios de avaliação e o checklist "Antes de enviar";
+  - **premissas** do README e do escopo: para cada uma, conferir que o comportamento implementado é o descrito.
+  Toda lacuna é corrigida ou entra nas limitações do README, com o "como eu faria".
+- **IA**: monta a matriz a partir do enunciado e do código, executa as verificações que faltarem (teste, navegador
+  ou leitura de código) e corrige o que estiver divergente.
+- **Marcelo**: decidir as lacunas (corrigir ou registrar como limitação); revisão; COMMIT.
+- **Pronto quando**: matriz sem item em aberto.
+- **Commits**: `docs: rastreabilidade dos requisitos` (e as correções que surgirem, em commits próprios).
+
+### Etapa 13 — Entrega
 - **Marcelo**: adicionar os avaliadores como colaboradores e testar o acesso; preencher as URLs da VPS em
   `credenciais.local.md`; responder ao e-mail com "responder a todos", com o link do repositório e as credenciais,
   **no mínimo 2 horas antes** da apresentação.
@@ -382,7 +430,7 @@ subseções abaixo.
 ## 4. Dependências e paralelismo
 
 ```
-Etapa 0 ──► 2 ──► 3 ──► 4 ──► 5 ──► 6 ──► 7 ──► 8 ──► 9 ──► 10 ──► 11
+Etapa 0 ──► 2 ──► 3 ──► 4 ──► 5 ──► 6 ──► 7 ──► 8 ──► 9 ──► 10 ──► 11 ──► 12 ──► 13
             ▲                 ▲            │
 Etapa 1 ────┴─(paralela)──────┘            └─ consumidor em paralelo (subagente)
 ```
@@ -414,7 +462,9 @@ Preenchido ao fim de cada etapa; vira a seção "Uso de inteligência artificial
 | 7 | API de integrações e worker; tela de Integrações; subagente em worktree para o consumidor (a partir do contrato), revisado e integrado pela sessão principal; verificação ponta a ponta no navegador; revisões com correção dos achados | liberação da etapa ("continue"); decisão sobre o retrato completo (manter várias pessoas na mesma URL e mandar o retrato em todo cadastro); COMMIT |
 | 8 | Dockerfiles, Compose, nginx; teste em pasta limpa; consulta dos domínios, túnel e DNS pelo MCP da Cloudflare; implantação na VPS por SSH com segredos gerados lá; verificação por HTTPS no navegador; revisões com correção dos achados | escolha do domínio; autorização do túnel e da VPS; revisão; COMMIT |
 | 9 | skill `roteiro-demo`; execução no navegador (três perfis, local e VPS) e num Android real pelo MCP mobile + adb; correção do roteiro onde ele falhou | Android conectado e desbloqueado; revisão; COMMIT |
-| 10 | | |
+| 10 | README final a partir do escopo e do registro; conferência completa (clone limpo, auditoria de pacotes, segredos no histórico, Mermaid); revisão final por revisor independente | revisão do README; COMMIT |
+| 11 | | |
+| 12 | | |
 
 ---
 
@@ -427,7 +477,8 @@ Preenchido ao fim de cada etapa; vira a seção "Uso de inteligência artificial
 | Etapa 8 | domínio para os hostnames; autorização para criar o túnel na Cloudflare; acesso ou execução na VPS |
 | Até a etapa 9 | um **Android disponível para o MCP mobile**: celular ligado por USB com depuração USB ativa, ou emulador do Android Studio aberto (hoje não há nenhum conectado) |
 | Cada etapa | COMMIT de cada commit (sempre depois de ver o resultado da revisão) |
-| Etapa 11 | colaboradores no GitHub e envio do e-mail (pendências já no painel) |
+| Etapas 11 e 12 | decidir os achados que mudam a estrutura do código e as lacunas encontradas na rastreabilidade |
+| Etapa 13 | colaboradores no GitHub e envio do e-mail (pendências já no painel) |
 
 ---
 

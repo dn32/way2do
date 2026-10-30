@@ -929,7 +929,10 @@ estão no [plano de execução](plano-de-execucao.md).
 9. Aceitação ponta a ponta: skill `roteiro-demo` no ambiente local, na VPS e num celular Android.
 10. README final (4 partes + bibliotecas + uso de IA) e conferência: clonar o repositório numa pasta limpa e
     seguir **só o README**; `dotnet list package --vulnerable` e `npm audit`; checklist "Antes de enviar".
-11. Entrega.
+11. Revisão do código pelos princípios SOLID, sem super-engenharia: corrigir o que tiver ganho concreto.
+12. Revisão contra o enunciado e as premissas: matriz de rastreabilidade (requisito → onde está atendido → como
+    foi verificado) e fechamento das lacunas.
+13. Entrega.
 
 As telas (etapa 5) dependem dos desenhos do Claude Design (etapa 1); até lá, o motor de dados e de sincronização
 avança independente da UI.
