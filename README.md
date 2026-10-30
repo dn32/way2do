@@ -9,7 +9,7 @@ real, para aplicações externas via webhooks.
 - **Integração**: outbox transacional + webhooks com retry
 - **Consumidor externo simulado**: ASP.NET Core
 
-Arquitetura e diagramas: [docs/arquitetura.md](docs/arquitetura.md) · Escopo detalhado: [docs/escopo.md](docs/escopo.md) · Plano de execução: [docs/plano-de-execucao.md](docs/plano-de-execucao.md) · Marca: [docs/marca.html](docs/marca.html) (abrir localmente no navegador)
+Arquitetura e diagramas: [docs/arquitetura.md](docs/arquitetura.md) · Escopo detalhado: [docs/escopo.md](docs/escopo.md) · Plano de execução: [docs/plano-de-execucao.md](docs/plano-de-execucao.md) · Requisitos do enunciado → solução → verificação: [docs/rastreabilidade.md](docs/rastreabilidade.md) · Marca: [docs/marca.html](docs/marca.html) (abrir localmente no navegador)
 
 ---
 
@@ -244,6 +244,9 @@ diagramas (visão geral, sincronização offline e integração externa) estão 
 
 - **Sem revogação de sessão**: um token vale até expirar (7 dias), mesmo após o logout em outro aparelho. Com mais
   tempo: token curto com refresh token, ou lista de revogação.
+- **O banco local continua no aparelho depois do logout** (é o que permite enviar as pendências no próximo login) e
+  não é criptografado: quem tiver acesso ao aparelho consegue lê-lo. Próximo passo: a opção "sair e apagar os dados
+  deste aparelho", liberada quando não houver alterações pendentes.
 - **LWW depende do relógio do aparelho.** Com mais tempo: relógio lógico híbrido (HLC), que dispensa relógios
   corretos.
 - **O usuário não é avisado quando a alteração dele perde uma disputa** de LWW; o valor apenas converge. Próximo

@@ -129,8 +129,8 @@ subseções abaixo.
 | 8 | Docker, Compose e VPS | escreve Dockerfiles e Compose; cria o túnel; revisão de marco | informa o domínio; autoriza o túnel; opera a VPS; revisão; COMMIT | ✅ `84e8e15` |
 | 9 | Aceitação ponta a ponta (skill `roteiro-demo`) | cria a skill; executa no navegador e no celular; corrige | disponibiliza o Android; revisão; COMMIT | ✅ `0792054` |
 | 10 | README final e conferência | escreve o README; faz a conferência completa; revisão final | revisa o README; revisão; COMMIT | ✅ `a1ae946` |
-| 11 | Revisão do código pelos princípios SOLID | revisores independentes por área; corrige com os testes como rede de segurança | decide os achados que mudam a estrutura; revisão; COMMIT | ⏳ achados avaliados e corrigidos; aguardando COMMIT |
-| 12 | Revisão contra o enunciado e as premissas | matriz de rastreabilidade (requisito → onde está atendido → como foi verificado); fecha as lacunas | decide as lacunas; revisão; COMMIT | ⬜ |
+| 11 | Revisão do código pelos princípios SOLID | revisores independentes por área; corrige com os testes como rede de segurança | decide os achados que mudam a estrutura; revisão; COMMIT | ✅ `86fe4b5` |
+| 12 | Revisão contra o enunciado e as premissas | matriz de rastreabilidade (requisito → onde está atendido → como foi verificado); fecha as lacunas | decide as lacunas; revisão; COMMIT | ⏳ matriz pronta, lacunas fechadas; aguardando COMMIT |
 | 13 | Entrega | confere repositório e VPS; ensaio final | libera o acesso; envia o e-mail com as credenciais | ⬜ |
 
 ### Etapa 0 — Documentação e revisão
@@ -435,6 +435,15 @@ subseções abaixo.
   ou leitura de código) e corrige o que estiver divergente.
 - **Marcelo**: decidir as lacunas (corrigir ou registrar como limitação); revisão; COMMIT.
 - **Pronto quando**: matriz sem item em aberto.
+- **Como foi**: matriz em [`docs/rastreabilidade.md`](rastreabilidade.md), montada a partir do enunciado e
+  conferida contra o código: cada linha cita o arquivo, o teste pelo nome ou o passo do roteiro, e cada citação foi
+  conferida (três citavam uma prova que não provava aquilo e foram trocadas). Nenhum requisito ficou de fora; dois
+  pontos seguem o enunciado por interpretação registrada nas premissas (a negação na regra urgente e a urgente
+  concluída no fim). Lacunas: o roteiro do navegador não provava a regra urgente **offline** (nada editado sem rede
+  passava a conter "urgente") nem a reabertura de uma tarefa; os dois passos entraram no roteiro e foram executados
+  no navegador, sem rede e com a sessão expirada, o que confirmou também a premissa do token vencido. O README ganhou
+  a limitação que só o escopo registrava (o banco local fica legível no aparelho depois do logout) e o link para a
+  matriz. Suítes: 237 + 80 + 172, todas verdes.
 - **Commits**: `docs: rastreabilidade dos requisitos` (e as correções que surgirem, em commits próprios).
 
 ### Etapa 13 — Entrega
@@ -483,8 +492,8 @@ Preenchido ao fim de cada etapa; vira a seção "Uso de inteligência artificial
 | 8 | Dockerfiles, Compose, nginx; teste em pasta limpa; consulta dos domínios, túnel e DNS pelo MCP da Cloudflare; implantação na VPS por SSH com segredos gerados lá; verificação por HTTPS no navegador; revisões com correção dos achados | escolha do domínio; autorização do túnel e da VPS; revisão; COMMIT |
 | 9 | skill `roteiro-demo`; execução no navegador (três perfis, local e VPS) e num Android real pelo MCP mobile + adb; correção do roteiro onde ele falhou | Android conectado e desbloqueado; revisão; COMMIT |
 | 10 | README final a partir do escopo e do registro; conferência completa (clone limpo, auditoria de pacotes, segredos no histórico, Mermaid); revisão final por revisor independente | revisão do README; COMMIT |
-| 11 | revisores independentes por área; avaliação de cada achado contra o critério sem super-engenharia; refatoração apoiada nos testes, com testes novos para as regras que ficaram puras; verificação no navegador | liberação da etapa ("continue"); COMMIT pendente |
-| 12 | | |
+| 11 | revisores independentes por área; avaliação de cada achado contra o critério sem super-engenharia; refatoração apoiada nos testes, com testes novos para as regras que ficaram puras; verificação no navegador | liberação da etapa ("continue"); COMMIT |
+| 12 | matriz de rastreabilidade a partir do enunciado e do código; conferência de cada citação; passos novos no roteiro, executados no navegador | liberação da etapa ("Continue"); revisão; COMMIT pendente |
 
 ---
 

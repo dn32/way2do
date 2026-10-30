@@ -70,11 +70,13 @@ menu (`Menu da conta`).
 3. **Regra urgente (A)** — criar `Roteiro · Urgente: trocar disjuntor`: vai para o topo dos pendentes com o selo
    URGENTE. Editar o título para `Roteiro · Trocar disjuntor, não é urgente`: perde o selo e sai do topo.
    Voltar para `Roteiro · Urgente: trocar disjuntor` e concluir: vai para "Concluídas" (urgente concluída fica no
-   fim). Screenshot em cada um dos três estados.
-4. **Offline (A)** — `setOffline(true)`. Esperado: barra "Offline". Criar `Roteiro · Feita offline`, editar a
-   descrição de `Roteiro · Medir quadro`, concluir `Roteiro · Comprar cabo 10mm`, excluir uma tarefa criada
-   offline. Esperado: barra "Offline · N pendentes" (N ≥ 3). **Recarregar a página ainda offline**: o app abre
-   pelo Service Worker, com a lista e as pendências. Screenshot.
+   fim). Reabrir: volta ao topo dos pendentes com o selo. Concluir de novo. Screenshot em cada um dos três estados.
+4. **Offline (A)** — `setOffline(true)`. Esperado: barra "Offline". Criar `Roteiro · Feita offline` e
+   `Roteiro · Rascunho offline`. Editar a descrição de `Roteiro · Feita offline` para `Urgente: antes da vistoria`.
+   Esperado: **sobe para o topo dos pendentes com o selo URGENTE na hora**, sem servidor (a regra vale offline).
+   Editar a descrição de `Roteiro · Medir quadro`, concluir `Roteiro · Comprar cabo 10mm`, excluir
+   `Roteiro · Rascunho offline`. Esperado: barra "Offline · N pendentes" (N ≥ 3). **Recarregar a página ainda
+   offline**: o app abre pelo Service Worker, com a lista e as pendências. Screenshot.
 5. **Volta online (A → B)** — `setOffline(false)`. Esperado em A: "Sincronizando…" e depois "Sincronizado", fila
    zerada. Em B: as alterações chegam sozinhas em até ~30 s (pull periódico) ou ao voltar o foco. Screenshot de B.
 6. **Conflito por campo (A × B)** — os dois offline; A muda o título de `Roteiro · Medir quadro` para
