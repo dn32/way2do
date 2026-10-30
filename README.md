@@ -4,6 +4,11 @@ Lista de tarefas web (desktop e celular) que funciona **totalmente offline**: as
 sincronizam sozinhas quando a conexão volta. O servidor reconcilia as alterações e as propaga, em quase tempo
 real, para aplicações externas via webhooks.
 
+> **▶ Demonstração em vídeo (3 min): [way2do-demo.mp4](way2do-demo.mp4)** — simulação completa contra a instância
+> de demonstração, com legendas: tarefas, filtros e regra urgente; offline com sincronização ao voltar a rede;
+> conflito entre dois aparelhos; isolamento entre usuários; integração com o consumidor externo (consumidor instável,
+> fora do ar e reiniciado com o 205); e um celular Android real reabrindo o app em modo avião.
+
 - **Backend**: ASP.NET Core (.NET 10) + PostgreSQL
 - **Frontend**: React + Vite + TypeScript (PWA, IndexedDB)
 - **Integração**: outbox transacional + webhooks com retry
